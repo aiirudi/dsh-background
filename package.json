@@ -1,0 +1,38 @@
+{
+  "name": "dsh-background",
+  "version": "0.1.0",
+  "description": "Independent background images and carousels for DeepSeek Harness Web and Desktop.",
+  "type": "module",
+  "license": "MIT",
+  "author": "aiirudi",
+  "repository": { "type": "git", "url": "https://github.com/aiirudi/dsh-background.git" },
+  "homepage": "https://github.com/aiirudi/dsh-background#readme",
+  "bugs": { "url": "https://github.com/aiirudi/dsh-background/issues" },
+  "keywords": ["dsh-plugin", "deepseek-harness", "background", "wallpaper", "carousel"],
+  "engines": { "node": ">=22.19.0" },
+  "exports": { ".": "./dist/index.js", "./client": "./dist/client.js" },
+  "files": ["dist", "cordis.patch.yml", "examples", "README.md", "LICENSE"],
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-layout", "@deepseek-ai/dsh-client-ui-sidebar", "@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-workspace", "@deepseek-ai/dsh-client-ui-settings-general"]
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
+    "package": "npm run typecheck && npm run build && npm pack",
+    "test": "vitest run --config tests/vitest.config.ts",
+    "test:browser": "playwright test --config tests/playwright.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.2",
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "enabled": true,
+  "fullscreen": {
+    "enabled": false,
+    "images": [],
+    "interval": 0,
+    "random": false,
+    "opacity": 0.15,
+    "size": "cover",
+    "position": "center",
+    "blur": 0,
+    "transition": 0.5,
+    "styles": []
+  },
+  "chat": {
+    "enabled": false,
+    "images": [
+      "https://images.example.com/chat-01.jpg",
+      "https://images.example.com/chat-02.jpg"
+    ],
+    "interval": 20,
+    "random": false,
+    "opacity": 0.3,
+    "size": "cover",
+    "position": "center",
+    "blur": 0,
+    "transition": 0.5,
+    "styles": [
+      { "opacity": 0.3, "size": "cover", "position": "center", "blur": 0 },
+      { "opacity": 0.2, "size": "contain", "position": "right bottom", "blur": 2 }
+    ]
+  },
+  "sidebar": {
+    "enabled": false,
+    "images": ["https://images.example.com/sidebar.jpg"],
+    "interval": 0,
+    "random": false,
+    "opacity": 0.25,
+    "size": "cover",
+    "position": "left top",
+    "blur": 1,
+    "transition": 0.5,
+    "styles": []
+  },
+  "sessionList": {
+    "enabled": false,
+    "images": ["https://images.example.com/session-list.jpg"],
+    "interval": 0,
+    "random": false,
+    "opacity": 0.2,
+    "size": "cover",
+    "position": "center",
+    "blur": 0,
+    "transition": 0.5,
+    "styles": []
+  }
+}
