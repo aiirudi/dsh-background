@@ -13,7 +13,7 @@
 可从 [GitHub Releases](https://github.com/flora-ari/dsh-background/releases) 下载 `.tgz` 安装包，也可以将下面的下载地址填入 Desktop 的插件安装页面，或通过 Web CLI 安装：
 
 ```sh
-dsh plugin --profile web add https://github.com/flora-ari/dsh-background/releases/download/v0.1.7/dsh-background-ari-0.1.7.tgz
+dsh plugin --profile web add https://github.com/flora-ari/dsh-background/releases/download/v0.1.8/dsh-background-ari-0.1.8.tgz
 ```
 
 ### Web
@@ -48,7 +48,7 @@ dsh plugin --profile desktop add github:flora-ari/dsh-background#main
 
 ```sh
 dsh plugin --profile web remove dsh-background
-dsh plugin --profile web add https://github.com/flora-ari/dsh-background/releases/download/v0.1.7/dsh-background-ari-0.1.7.tgz
+dsh plugin --profile web add https://github.com/flora-ari/dsh-background/releases/download/v0.1.8/dsh-background-ari-0.1.8.tgz
 ```
 
 开发过程中如已安装临时包 `flora-ari-dsh-background`，也要在对应 profile 移除它；Web 端可执行 `dsh plugin --profile web remove flora-ari-dsh-background`，然后安装上面的新版安装包。
