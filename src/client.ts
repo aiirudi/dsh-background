@@ -143,6 +143,7 @@ window.__ModuleLoader__.load({
             return React.createElement('div', {
               ref: container,
               style: {
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
                 height: '100%', minHeight: 0, minWidth: 0, overflow: 'auto',
                 boxSizing: 'border-box', padding: '24px',
                 paddingTop: document.documentElement.dataset.platform === 'darwin'

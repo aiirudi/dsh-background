@@ -34,7 +34,7 @@ ${issues.join("\n")}`);
     };
   }
   function defaultRightSidebarLayout() {
-    return { size: "cover", position: "center" };
+    return { size: "auto 100%", position: "center" };
   }
   function createDefaultConfig() {
     return {
@@ -639,12 +639,14 @@ ${issues.join("\n")}`);
     sidebar: "\u4FA7\u8FB9\u680F"
   };
   var CSS = `
-.dsh-bg-settings{font:inherit;color:inherit;max-width:860px;padding:8px;line-height:1.6}
+.dsh-bg-settings{font:inherit;color:inherit;width:100%;max-width:860px;box-sizing:border-box;padding:8px;line-height:1.6}
 .dsh-bg-settings *{box-sizing:border-box}
+.dsh-bg-settings [hidden]{display:none!important}
 .dsh-bg-settings h2{font-size:22px;margin:0 0 8px}.dsh-bg-settings p{margin:8px 0}
 .dsh-bg-settings .bg-muted{opacity:.72;font-size:13px}
 .dsh-bg-settings .bg-tabs,.dsh-bg-settings .bg-actions{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
 .dsh-bg-settings button,.dsh-bg-settings input,.dsh-bg-settings select,.dsh-bg-settings textarea{font:inherit;color:inherit;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:8px;background:transparent;padding:8px 12px}
+.dsh-bg-settings option{background:var(--dsw-alias-bg-layer-2,Canvas);color:inherit}
 .dsh-bg-settings button{cursor:pointer}.dsh-bg-settings button:hover{background:color-mix(in srgb,currentColor 8%,transparent)}
 .dsh-bg-settings button[aria-pressed=true],.dsh-bg-settings .bg-primary{background:#2563eb;color:#fff;border-color:#2563eb}
 .dsh-bg-settings button.bg-primary:hover,.dsh-bg-settings button[aria-pressed=true]:hover{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
@@ -739,6 +741,42 @@ ${issues.join("\n")}`);
         input.name = name;
         label.append(el("span", text), input);
         target.append(label);
+        return label;
+      }
+      function sizeFields(label, customLabel, name, value, onChange, target = grid) {
+        const choices = [
+          ["auto 100%", "\u9AD8\u5EA6\u94FA\u6EE1\uFF0C\u5BBD\u5EA6\u81EA\u9002\u5E94"],
+          ["100% auto", "\u5BBD\u5EA6\u94FA\u6EE1\uFF0C\u9AD8\u5EA6\u81EA\u9002\u5E94"],
+          ["cover", "\u7B49\u6BD4\u4F8B\u94FA\u6EE1\uFF08\u88C1\u526A\uFF09"],
+          ["contain", "\u5B8C\u6574\u663E\u793A\uFF08\u53EF\u80FD\u7559\u767D\uFF09"],
+          ["100% 100%", "\u6309\u5BBD\u9AD8\u94FA\u6EE1\uFF08\u62C9\u4F38\uFF09"],
+          ["custom", "\u81EA\u5B9A\u4E49\u5C3A\u5BF8"]
+        ];
+        const preset = el("select");
+        for (const [value2, text] of choices) {
+          const option = el("option", text);
+          option.value = value2;
+          preset.append(option);
+        }
+        preset.value = choices.some(([preset2]) => preset2 !== "custom" && preset2 === value) ? value : "custom";
+        field(label, `${name}Preset`, preset, target);
+        const custom = el("input");
+        custom.type = "text";
+        custom.value = value;
+        custom.placeholder = "120% auto / auto 100% / 480px auto";
+        const customField = field(customLabel, name, custom, target);
+        customField.hidden = preset.value !== "custom";
+        preset.addEventListener("change", () => {
+          customField.hidden = preset.value !== "custom";
+          if (preset.value === "custom") custom.focus();
+          else {
+            custom.value = preset.value;
+            onChange(preset.value);
+          }
+        });
+        custom.addEventListener("input", () => {
+          onChange(custom.value);
+        });
       }
       for (const [key, label, min, max, step] of [
         ["opacity", "\u56FE\u7247\u4E0D\u900F\u660E\u5EA6\uFF080\u20131\uFF09", 0, 1, 0.05],
@@ -757,14 +795,9 @@ ${issues.join("\n")}`);
         });
         field(label, key, input);
       }
-      const size = el("input");
-      size.type = "text";
-      size.value = config.size;
-      size.placeholder = "cover / contain / 100% auto";
-      size.addEventListener("input", () => {
-        config.size = size.value;
+      sizeFields(selected === "sidebar" ? "\u5DE6\u4FA7\u56FE\u7247\u7F29\u653E\u65B9\u5F0F" : "\u56FE\u7247\u7F29\u653E\u65B9\u5F0F", selected === "sidebar" ? "\u5DE6\u4FA7\u81EA\u5B9A\u4E49\u56FE\u7247\u5C3A\u5BF8" : "\u81EA\u5B9A\u4E49\u56FE\u7247\u5C3A\u5BF8", "size", config.size, (value) => {
+        config.size = value;
       });
-      field(selected === "sidebar" ? "\u5DE6\u4FA7\u56FE\u7247\u7F29\u653E\u65B9\u5F0F" : "\u56FE\u7247\u7F29\u653E\u65B9\u5F0F", "size", size);
       const position = el("input");
       position.type = "text";
       position.value = config.position;
@@ -781,19 +814,14 @@ ${issues.join("\n")}`);
         const layout = el("div");
         layout.className = "bg-card";
         layout.append(el("h3", "\u53F3\u4FA7\u9762\u677F\u56FE\u7247\u5E03\u5C40"));
-        const hint2 = el("p", "\u5171\u7528\u4FA7\u8FB9\u680F\u56FE\u5E93\uFF0C\u7F29\u653E\u548C\u4F4D\u7F6E\u72EC\u7ACB\u8BBE\u7F6E\u3002\u9ED8\u8BA4 cover \u968F\u9762\u677F\u5BBD\u9AD8\u81EA\u52A8\u94FA\u6EE1\uFF1B\u4FEE\u6539\u4F4D\u7F6E\u53EF\u8C03\u6574\u88C1\u526A\u7126\u70B9\u3002");
+        const hint2 = el("p", "\u5171\u7528\u4FA7\u8FB9\u680F\u56FE\u5E93\uFF0C\u7F29\u653E\u548C\u4F4D\u7F6E\u72EC\u7ACB\u8BBE\u7F6E\u3002\u9ED8\u8BA4\u9AD8\u5EA6\u94FA\u6EE1\u3001\u5BBD\u5EA6\u6309\u56FE\u7247\u6BD4\u4F8B\u81EA\u9002\u5E94\uFF1B\u8D85\u51FA\u7EC4\u4EF6\u7684\u5BBD\u5EA6\u4F1A\u88C1\u5207\uFF0C\u5BBD\u5EA6\u4E0D\u8DB3\u65F6\u4E24\u4FA7\u7559\u767D\u3002");
         hint2.className = "bg-muted";
         layout.append(hint2);
         const rightGrid = el("div");
         rightGrid.className = "bg-grid";
-        const rightSize = el("input");
-        rightSize.type = "text";
-        rightSize.value = right.size;
-        rightSize.placeholder = "cover / contain / 100% 100%";
-        rightSize.addEventListener("input", () => {
-          right.size = rightSize.value;
-        });
-        field("\u53F3\u4FA7\u56FE\u7247\u7F29\u653E\u65B9\u5F0F", "right.size", rightSize, rightGrid);
+        sizeFields("\u53F3\u4FA7\u56FE\u7247\u7F29\u653E\u65B9\u5F0F", "\u53F3\u4FA7\u81EA\u5B9A\u4E49\u56FE\u7247\u5C3A\u5BF8", "right.size", right.size, (value) => {
+          right.size = value;
+        }, rightGrid);
         const rightPosition = el("input");
         rightPosition.type = "text";
         rightPosition.value = right.position;
@@ -805,10 +833,10 @@ ${issues.join("\n")}`);
         const rightActions = el("div");
         rightActions.className = "bg-actions";
         rightActions.append(action("\u6062\u590D\u53F3\u4FA7\u94FA\u6EE1", () => {
-          right.size = "cover";
+          right.size = "auto 100%";
           right.position = "center";
           render();
-          message("\u53F3\u4FA7\u5DF2\u6062\u590D\u94FA\u6EE1\uFF0C\u4FDD\u5B58\u540E\u751F\u6548\u3002");
+          message("\u53F3\u4FA7\u5DF2\u6062\u590D\u9AD8\u5EA6\u94FA\u6EE1\uFF0C\u4FDD\u5B58\u540E\u751F\u6548\u3002");
         }));
         layout.append(rightGrid, rightActions);
         root.append(card, layout);
@@ -1138,6 +1166,9 @@ ${issues.join("\n")}`);
               return React.createElement("div", {
                 ref: container,
                 style: {
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
                   height: "100%",
                   minHeight: 0,
                   minWidth: 0,

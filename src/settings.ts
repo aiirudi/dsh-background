@@ -6,12 +6,14 @@ const LABELS: Record<RegionName, string> = {
 };
 
 const CSS = `
-.dsh-bg-settings{font:inherit;color:inherit;max-width:860px;padding:8px;line-height:1.6}
+.dsh-bg-settings{font:inherit;color:inherit;width:100%;max-width:860px;box-sizing:border-box;padding:8px;line-height:1.6}
 .dsh-bg-settings *{box-sizing:border-box}
+.dsh-bg-settings [hidden]{display:none!important}
 .dsh-bg-settings h2{font-size:22px;margin:0 0 8px}.dsh-bg-settings p{margin:8px 0}
 .dsh-bg-settings .bg-muted{opacity:.72;font-size:13px}
 .dsh-bg-settings .bg-tabs,.dsh-bg-settings .bg-actions{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
 .dsh-bg-settings button,.dsh-bg-settings input,.dsh-bg-settings select,.dsh-bg-settings textarea{font:inherit;color:inherit;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:8px;background:transparent;padding:8px 12px}
+.dsh-bg-settings option{background:var(--dsw-alias-bg-layer-2,Canvas);color:inherit}
 .dsh-bg-settings button{cursor:pointer}.dsh-bg-settings button:hover{background:color-mix(in srgb,currentColor 8%,transparent)}
 .dsh-bg-settings button[aria-pressed=true],.dsh-bg-settings .bg-primary{background:#2563eb;color:#fff;border-color:#2563eb}
 .dsh-bg-settings button.bg-primary:hover,.dsh-bg-settings button[aria-pressed=true]:hover{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
@@ -95,6 +97,32 @@ export function createSettingsPanel(
     function field(text: string, name: string, input: HTMLInputElement | HTMLSelectElement, target: HTMLElement = grid) {
       const label = el('label'); label.className = 'bg-field'; input.name = name;
       label.append(el('span', text), input); target.append(label);
+      return label;
+    }
+    function sizeFields(label: string, customLabel: string, name: string, value: string, onChange: (value: string) => void, target: HTMLElement = grid) {
+      const choices = [
+        ['auto 100%', '高度铺满，宽度自适应'],
+        ['100% auto', '宽度铺满，高度自适应'],
+        ['cover', '等比例铺满（裁剪）'],
+        ['contain', '完整显示（可能留白）'],
+        ['100% 100%', '按宽高铺满（拉伸）'],
+        ['custom', '自定义尺寸'],
+      ] as const;
+      const preset = el('select');
+      for (const [value, text] of choices) {
+        const option = el('option', text); option.value = value; preset.append(option);
+      }
+      preset.value = choices.some(([preset]) => preset !== 'custom' && preset === value) ? value : 'custom';
+      field(label, `${name}Preset`, preset, target);
+      const custom = el('input'); custom.type = 'text'; custom.value = value; custom.placeholder = '120% auto / auto 100% / 480px auto';
+      const customField = field(customLabel, name, custom, target);
+      customField.hidden = preset.value !== 'custom';
+      preset.addEventListener('change', () => {
+        customField.hidden = preset.value !== 'custom';
+        if (preset.value === 'custom') custom.focus();
+        else { custom.value = preset.value; onChange(preset.value); }
+      });
+      custom.addEventListener('input', () => { onChange(custom.value); });
     }
     for (const [key, label, min, max, step] of [
       ['opacity', '图片不透明度（0–1）', 0, 1, 0.05],
@@ -107,8 +135,7 @@ export function createSettingsPanel(
       input.addEventListener('input', () => { config[key] = input.value === '' ? NaN : Number(input.value); });
       field(label, key, input);
     }
-    const size = el('input'); size.type = 'text'; size.value = config.size; size.placeholder = 'cover / contain / 100% auto';
-    size.addEventListener('input', () => { config.size = size.value; }); field(selected === 'sidebar' ? '左侧图片缩放方式' : '图片缩放方式', 'size', size);
+    sizeFields(selected === 'sidebar' ? '左侧图片缩放方式' : '图片缩放方式', selected === 'sidebar' ? '左侧自定义图片尺寸' : '自定义图片尺寸', 'size', config.size, value => { config.size = value; });
     const position = el('input'); position.type = 'text'; position.value = config.position; position.placeholder = 'center / right bottom';
     position.addEventListener('input', () => { config.position = position.value; }); field(selected === 'sidebar' ? '左侧图片位置' : '图片位置', 'position', position);
     card.append(grid, check('随机播放', config.random, value => { config.random = value; }));
@@ -116,15 +143,14 @@ export function createSettingsPanel(
       const right = draft.sidebar.right;
       const layout = el('div'); layout.className = 'bg-card';
       layout.append(el('h3', '右侧面板图片布局'));
-      const hint = el('p', '共用侧边栏图库，缩放和位置独立设置。默认 cover 随面板宽高自动铺满；修改位置可调整裁剪焦点。'); hint.className = 'bg-muted';
+      const hint = el('p', '共用侧边栏图库，缩放和位置独立设置。默认高度铺满、宽度按图片比例自适应；超出组件的宽度会裁切，宽度不足时两侧留白。'); hint.className = 'bg-muted';
       layout.append(hint);
       const rightGrid = el('div'); rightGrid.className = 'bg-grid';
-      const rightSize = el('input'); rightSize.type = 'text'; rightSize.value = right.size; rightSize.placeholder = 'cover / contain / 100% 100%';
-      rightSize.addEventListener('input', () => { right.size = rightSize.value; }); field('右侧图片缩放方式', 'right.size', rightSize, rightGrid);
+      sizeFields('右侧图片缩放方式', '右侧自定义图片尺寸', 'right.size', right.size, value => { right.size = value; }, rightGrid);
       const rightPosition = el('input'); rightPosition.type = 'text'; rightPosition.value = right.position; rightPosition.placeholder = 'center / right bottom';
       rightPosition.addEventListener('input', () => { right.position = rightPosition.value; }); field('右侧图片位置', 'right.position', rightPosition, rightGrid);
       const rightActions = el('div'); rightActions.className = 'bg-actions';
-      rightActions.append(action('恢复右侧铺满', () => { right.size = 'cover'; right.position = 'center'; render(); message('右侧已恢复铺满，保存后生效。'); }));
+      rightActions.append(action('恢复右侧铺满', () => { right.size = 'auto 100%'; right.position = 'center'; render(); message('右侧已恢复高度铺满，保存后生效。'); }));
       layout.append(rightGrid, rightActions); root.append(card, layout);
     } else root.append(card);
     const images = el('div'); images.className = 'bg-card'; images.append(el('h3', `图片列表（${config.images.length}）`));

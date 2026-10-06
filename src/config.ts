@@ -76,7 +76,7 @@ function defaultRegion(): RegionConfig {
 }
 
 function defaultRightSidebarLayout(): RightSidebarLayout {
-  return { size: "cover", position: "center" };
+  return { size: "auto 100%", position: "center" };
 }
 
 export function createDefaultConfig(): BackgroundConfig {
