@@ -45,10 +45,10 @@ npm run build
 npm pack
 ```
 
-完成上述构建后，`npm pack` 输出 `dsh-background-0.1.2.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径，例如：
+完成上述构建后，`npm pack` 输出 `dsh-background-0.1.3.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径，例如：
 
 ```sh
-dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-background-0.1.2.tgz"
+dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-background-0.1.3.tgz"
 ```
 
 ## 设置背景
@@ -62,10 +62,14 @@ dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-backgro
 | 区域参数 | 应用位置 |
 | --- | --- |
 | `fullscreen` | 整个应用界面的底层背景 |
-| `chat` | 聊天主区域，包括空会话页面 |
-| `sidebar` | 整个左侧导航栏，包括会话与工作区列表 |
+| `chat` | 聊天主区域，包括空会话与轨迹页面 |
+| `sidebar` | 左侧导航、会话与工作区列表，以及右侧边栏 |
 
 各区域独立配置；`fullscreen` 位于底层，聊天和侧边栏可以在它上面叠加自己的背景。图片的 `opacity` 只控制背景图片，文字和操作控件不会一起变透明。会话列表与侧边栏使用同一张背景，不再单独设置；显示侧边栏背景时，会话列表底部的分隔渐变也会移除。
+
+轨迹页面优先使用已启用且有图片的 `chat` 背景；聊天背景关闭或图库为空时，沿用 `fullscreen` 背景。
+
+右侧边栏共用 `sidebar` 的图库与图片样式，每次打开时独立随机选择初始图片，即使 `random` 为 `false` 也会随机选取。右侧与左侧的当前图片互不绑定；`interval` 大于 `0` 时，右侧按自己的计时器轮播，后续切换顺序由 `random` 决定。关闭右侧边栏会停止它的轮播，再次打开时重新选图。
 
 旧版配置中的 `sessionList` 会被忽略，已有的 `fullscreen`、`chat` 和 `sidebar` 配置保持可用。保存或导出后，配置只包含这三个区域。
 
@@ -134,7 +138,7 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 
 ## 开发约定
 
-`main` 是开发主干。每次迭代可以使用 `v0.1.2` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
+`main` 是开发主干。每次迭代可以使用 `v0.1.3` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
 
 测试代码统一放在本地 `tests/`。按本项目约定，`tests/`、`.agents/`、`.claude/` 以及其他运行时临时产物不上传到仓库，也不进入安装包；本地开发环境保留测试时，可执行 `npm test` 和 `npm run test:browser`。安装包通过 `files` 白名单仅包含构建产物、插件配置、图标、示例和文档。
 
@@ -145,6 +149,8 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 `v0.1.1` 已通过类型检查、构建、28 项本地单元测试和 6 项 Chromium 浏览器测试。在隔离的官方 `@deepseek-ai/dsh@0.2.0-rc.2` Web profile 中，已验证侧边栏快捷入口与设置弹窗内原入口并存、两处保存后的配置同步、原 PNG 图标、收起侧栏的入口、三个区域配置与会话列表共用侧边栏背景，以及深色和浅色主题下的透明设置弹窗、底层文字隐藏与关闭后的恢复，无页面错误。自动化任务下方的位置通过官方入口排序契约验证。
 
 `v0.1.2` 增加设置导航图标适配，已通过类型检查、构建、客户端注册定向测试，以及官方 Web 端的图标显示、关闭重开与配置保存验证。设置与侧栏图标均与原 `asset/icon.png` 字节一致。当前宿主没有设置导航图标扩展接口，适配仅作用于本插件的设置入口。
+
+`v0.1.3` 增加轨迹背景继承和右侧边栏独立选图。32 项单元测试、7 项 Chromium 测试通过，后续结构底色调整也通过定向复测；官方 Web 端已实跑验证轨迹显示、右侧首次随机选图、关闭重开及原图标一致性。验证使用隔离的本地会话历史，没有调用模型。
 
 Desktop 的适配依据其共用 Web 客户端与官方插件接口；尚未在 Electron Desktop 中实机验证。Harness 的插件 API 尚未稳定，之后的版本可能需要适配。
 

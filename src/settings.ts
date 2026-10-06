@@ -77,7 +77,7 @@ export function createSettingsPanel(
   function render() {
     root.replaceChildren();
     const style = el('style', CSS);
-    root.append(style, el('h2', '背景设置'), el('p', '为全局、聊天和侧边栏分别设置图片与轮播。会话列表沿用侧边栏背景。'));
+    root.append(style, el('h2', '背景设置'), el('p', '为全局、聊天（含轨迹）和侧边栏设置图片与轮播。会话列表沿用侧边栏背景，右侧边栏共用图库并在打开时独立随机选图。'));
     root.append(check('启用背景插件', draft.enabled, value => { draft.enabled = value; }));
     const tabs = el('div'); tabs.className = 'bg-tabs'; tabs.setAttribute('aria-label', '背景区域');
     for (const region of REGION_NAMES) {

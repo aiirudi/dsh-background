@@ -109,10 +109,16 @@ export function mountBackgrounds(
     mounts: new Map(),
     timer: undefined,
   }));
+  // Right sidebars reuse the sidebar settings, but each open panel owns its image/clock.
+  const rightRegions = new Map<HTMLElement, RegionRuntime>();
   const transparentSurfaces = new Map<HTMLElement, SavedStyle[]>();
 
+  function randomIndex(region: RegionConfig): number {
+    return region.images.length > 1 ? Math.floor(Math.random() * region.images.length) : 0;
+  }
+
   function initialIndex(region: RegionConfig): number {
-    return region.random && region.images.length > 1 ? Math.floor(Math.random() * region.images.length) : 0;
+    return region.random ? randomIndex(region) : 0;
   }
 
   function enabled(region: RegionRuntime): boolean {
@@ -223,6 +229,53 @@ export function mountBackgrounds(
     renderImage(mount, region, false);
   }
 
+  function reconcileMounts(region: RegionRuntime, desired: Set<HTMLElement>): void {
+    for (const mount of [...region.mounts.values()]) {
+      if (!desired.has(mount.host) || !mount.layer.isConnected) removeMount(region, mount);
+    }
+    for (const host of desired) {
+      if (!region.mounts.has(host)) addMount(region, host);
+    }
+    ensureTimer(region);
+  }
+
+  function reconcileRightSidebars(): void {
+    const desiredPanels = new Set<HTMLElement>();
+    const sidebar = regions.find((region) => region.name === "sidebar")!;
+    if (enabled(sidebar)) {
+      for (const panel of document.querySelectorAll('[data-sidebar-right-panel][data-sidebar-right-session]')) {
+        if (panel instanceof window!.HTMLElement && !owned(panel)
+          && panel.hasAttribute("data-sidebar-right-open") && panel.closest('[hidden], [aria-hidden="true"]') === null) {
+          desiredPanels.add(panel);
+        }
+      }
+    }
+    for (const [panel, region] of rightRegions) {
+      if (desiredPanels.has(panel)) continue;
+      stopTimer(region);
+      for (const mount of [...region.mounts.values()]) removeMount(region, mount);
+      rightRegions.delete(panel);
+    }
+    for (const panel of desiredPanels) {
+      let region = rightRegions.get(panel);
+      if (!region) {
+        region = {
+          name: "sidebar", config: sidebar.config, imageIndex: randomIndex(sidebar.config),
+          mounts: new Map(), timer: undefined,
+        };
+        rightRegions.set(panel, region);
+      }
+      const desired = new Set<HTMLElement>();
+      // Mount inside docked panes, not their common shell: floats keep their own layers.
+      for (const host of panel.querySelectorAll('[data-dockkit-host="dock"] > [data-dockkit-pane], [data-dockkit-empty] > [data-dockkit-pane]')) {
+        if (host instanceof window!.HTMLElement && !owned(host) && host.closest('[hidden], [aria-hidden="true"]') === null) {
+          desired.add(host);
+        }
+      }
+      reconcileMounts(region, desired);
+    }
+  }
+
   function reconcileTransparentSurfaces(): void {
     const desired = new Map<HTMLElement, Record<string, string>>();
     const transparentBackground = { "background-color": "transparent" };
@@ -254,7 +307,41 @@ export function mountBackgrounds(
     if (enabled(sidebar)) {
       for (const mount of sidebar.mounts.values()) addWorkspaceSurfaces(mount.host);
     }
-    if (regions.some((region) => enabled(region) && region.mounts.size > 0)) {
+    const chat = regions.find((region) => region.name === "chat")!;
+    for (const trajectory of document.querySelectorAll('[data-slot="conversation.view"] > [data-conversation-composer-overlay]:has([data-trajectory-scroll])')) {
+      if (!(trajectory instanceof window!.HTMLElement) || owned(trajectory)) continue;
+      const background = [chat, fullscreen].find((region) => enabled(region)
+        && [...region.mounts.keys()].some((host) => host.contains(trajectory)));
+      if (!background) continue;
+      // Trajectory lives inside ConversationRoot, so the existing chat layer wins
+      // over fullscreen automatically. Only clear its verified structural surfaces.
+      desired.set(trajectory, transparentBackground);
+      for (const surface of trajectory.querySelectorAll(':scope > [role="toolbar"], :scope > section > div:first-child')) {
+        if (surface instanceof window!.HTMLElement) desired.set(surface, transparentBackground);
+      }
+      for (const scroll of trajectory.querySelectorAll('[data-trajectory-scroll]')) {
+        if (!(scroll instanceof window!.HTMLElement)) continue;
+        desired.set(scroll, transparentBackground);
+        const split = scroll.parentElement;
+        if (split instanceof window!.HTMLElement && trajectory.contains(split)) desired.set(split, transparentBackground);
+        for (const table of scroll.querySelectorAll(':scope > table')) {
+          if (table instanceof window!.HTMLElement) desired.set(table, transparentBackground);
+        }
+      }
+      const detail = trajectory.querySelector('#trajectory-detail-panel')?.closest('aside');
+      if (detail instanceof window!.HTMLElement && trajectory.contains(detail)) desired.set(detail, transparentBackground);
+    }
+    for (const region of rightRegions.values()) {
+      for (const mount of region.mounts.values()) {
+        // The visible dock pane is itself the bg-base data-dockkit-content shell.
+        if (mount.host.hasAttribute("data-dockkit-content")) desired.set(mount.host, transparentBackground);
+        // Registered tab roots may paint a whole-pane fill; leave their controls intact.
+        for (const surface of mount.host.querySelectorAll('[data-slot="sidebar.right.pane.tab"] > *')) {
+          if (surface instanceof window!.HTMLElement && !owned(surface)) desired.set(surface, transparentBackground);
+        }
+      }
+    }
+    if ([...regions, ...rightRegions.values()].some((region) => enabled(region) && region.mounts.size > 0)) {
       // Harness Settings portals beside the root, so it must be found document-wide.
       // Its nav/content are transparent; tint only the panel and shared settings cards.
       let settingsOpen = false;
@@ -324,14 +411,9 @@ export function mountBackgrounds(
           if (host instanceof window!.HTMLElement && !owned(host)) desired.add(host);
         }
       }
-      for (const mount of [...region.mounts.values()]) {
-        if (!desired.has(mount.host) || !mount.layer.isConnected) removeMount(region, mount);
-      }
-      for (const host of desired) {
-        if (!region.mounts.has(host)) addMount(region, host);
-      }
-      ensureTimer(region);
+      reconcileMounts(region, desired);
     }
+    reconcileRightSidebars();
     reconcileTransparentSurfaces();
   }
 
@@ -346,7 +428,7 @@ export function mountBackgrounds(
 
   function lostOwnedNode(node: Node): boolean {
     if (node === styleElement && !styleElement.isConnected) return true;
-    for (const region of regions) {
+    for (const region of [...regions, ...rightRegions.values()]) {
       for (const mount of region.mounts.values()) {
         if (node === mount.layer && !mount.layer.isConnected) return true;
       }
@@ -382,9 +464,16 @@ export function mountBackgrounds(
         const retainedIndex = currentImage === undefined ? -1 : region.config.images.indexOf(currentImage);
         region.imageIndex = retainedIndex >= 0 ? retainedIndex : initialIndex(region.config);
       }
+      for (const region of rightRegions.values()) {
+        stopTimer(region);
+        const currentImage = region.config.images[region.imageIndex];
+        region.config = next.sidebar;
+        const retainedIndex = currentImage === undefined ? -1 : region.config.images.indexOf(currentImage);
+        region.imageIndex = retainedIndex >= 0 ? retainedIndex : randomIndex(region.config);
+      }
       config = next;
       reconcile();
-      for (const region of regions) {
+      for (const region of [...regions, ...rightRegions.values()]) {
         for (const mount of region.mounts.values()) renderImage(mount, region, false);
       }
     },
@@ -392,10 +481,11 @@ export function mountBackgrounds(
       if (disposed) return;
       disposed = true;
       observer.disconnect();
-      for (const region of regions) {
+      for (const region of [...regions, ...rightRegions.values()]) {
         stopTimer(region);
         for (const mount of [...region.mounts.values()]) removeMount(region, mount);
       }
+      rightRegions.clear();
       for (const [surface, saved] of transparentSurfaces) restoreStyles(surface, saved);
       transparentSurfaces.clear();
       styleElement.remove();
