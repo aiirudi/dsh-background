@@ -45,10 +45,10 @@ npm run build
 npm pack
 ```
 
-完成上述构建后，`npm pack` 输出 `dsh-background-0.1.3.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径，例如：
+完成上述构建后，`npm pack` 输出 `dsh-background-0.1.5.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径，例如：
 
 ```sh
-dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-background-0.1.3.tgz"
+dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-background-0.1.5.tgz"
 ```
 
 ## 设置背景
@@ -69,7 +69,9 @@ dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-backgro
 
 轨迹页面优先使用已启用且有图片的 `chat` 背景；聊天背景关闭或图库为空时，沿用 `fullscreen` 背景。
 
-右侧边栏共用 `sidebar` 的图库与图片样式，每次打开时独立随机选择初始图片，即使 `random` 为 `false` 也会随机选取。右侧与左侧的当前图片互不绑定；`interval` 大于 `0` 时，右侧按自己的计时器轮播，后续切换顺序由 `random` 决定。关闭右侧边栏会停止它的轮播，再次打开时重新选图。
+右侧边栏共用 `sidebar` 的图库，每次打开时独立随机选择初始图片，即使 `random` 为 `false` 也会随机选取。右侧与左侧的当前图片互不绑定；`interval` 大于 `0` 时，右侧按自己的计时器轮播，后续切换顺序由 `random` 决定。关闭右侧边栏会停止它的轮播，再次打开时重新选图。
+
+在侧边栏设置中，左右两侧分别调整图片缩放和位置。右侧默认使用 `cover`、`center`，随窗口、面板宽度和拆分后的组件尺寸自动铺满；修改左侧布局不会改变右侧布局。可点击「恢复右侧铺满」恢复默认。`cover` 等比例缩放并裁剪，`contain` 完整显示图片但可能留白，`100% 100%` 铺满但可能拉伸图片。
 
 右侧面板的展开、收起、宽度和模式控制完全沿用 DeepSeek Harness 原版，插件只添加背景，不修改原版仓库或主动切换显示模式。普通侧栏保持与聊天区域并排；Harness 会记住此前选择的全屏模式。在较宽的窗口中，如果侧栏占满聊天区域，可点击侧栏内的「退出全屏」恢复并排。窗口较窄时，宿主会自行使用全屏布局。
 
@@ -95,6 +97,18 @@ dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-backgro
 | `styles` | `[]` | 与 `images` 按索引对应的单张图片样式覆盖 |
 
 `styles[i]` 可以覆盖第 `i` 张图片的 `opacity`、`size`、`position` 和 `blur`。未填写的字段继承该区域的设置；样式项数不能超过图片数量。它是受限的视觉参数，不接受任意 CSS。
+
+`sidebar.right` 单独设置右侧的 `size` 和 `position`，默认分别为 `"cover"` 和 `"center"`，省略字段也使用这两个默认值。右侧使用它们作为布局参数；`sidebar.styles[i]` 的尺寸和位置仅影响左侧，不会覆盖右侧布局。右侧继续沿用侧边栏及单图样式的不透明度与模糊设置。例如，左侧完整显示、右侧铺满并向右对齐：
+
+```json
+{
+  "sidebar": {
+    "size": "contain",
+    "position": "left top",
+    "right": { "size": "cover", "position": "right center" }
+  }
+}
+```
 
 配置支持省略字段，省略的字段使用默认值。拼错参数名或填写非法值时，设置页面会显示错误，保存前的配置继续生效。
 
@@ -140,7 +154,7 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 
 ## 开发约定
 
-`main` 是开发主干。每次迭代可以使用 `v0.1.3` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
+`main` 是开发主干。每次迭代可以使用 `v0.1.5` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
 
 测试代码统一放在本地 `tests/`。按本项目约定，`tests/`、`.agents/`、`.claude/` 以及其他运行时临时产物不上传到仓库，也不进入安装包；本地开发环境保留测试时，可执行 `npm test` 和 `npm run test:browser`。安装包通过 `files` 白名单仅包含构建产物、插件配置、图标、示例和文档。
 
@@ -155,6 +169,8 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 `v0.1.3` 增加轨迹背景继承和右侧边栏独立选图。32 项单元测试、7 项 Chromium 测试通过，后续结构底色调整也通过定向复测；官方 Web 端已实跑验证轨迹显示、右侧首次随机选图、关闭重开及原图标一致性。验证使用隔离的本地会话历史，没有调用模型。
 
 另在 1360、1340、1000 和 700 像素窗口中对比背景关闭与开启状态，原生右侧面板、聊天区域及网格布局的尺寸和显示模式均一致。
+
+`v0.1.5` 增加右侧独立缩放、位置和恢复铺满功能，48 项单元测试与 8 项 Chromium 测试通过。官方 Web 端已验证左右布局互不影响、右侧参数保存后关闭重开与刷新保留，以及 1360×900、1000×650 窗口和原生分栏中的铺满效果；背景启停前后的右侧面板模式和尺寸一致。
 
 Desktop 的适配依据其共用 Web 客户端与官方插件接口；尚未在 Electron Desktop 中实机验证。Harness 的插件 API 尚未稳定，之后的版本可能需要适配。
 

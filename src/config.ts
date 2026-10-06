@@ -30,11 +30,21 @@ export interface RegionConfig {
   styles: ImageStyle[];
 }
 
+/** Right sidebars share the gallery but lay out images within their own panes. */
+export interface RightSidebarLayout {
+  size: string;
+  position: string;
+}
+
+export interface SidebarConfig extends RegionConfig {
+  right: RightSidebarLayout;
+}
+
 export interface BackgroundConfig {
   enabled: boolean;
   fullscreen: RegionConfig;
   chat: RegionConfig;
-  sidebar: RegionConfig;
+  sidebar: SidebarConfig;
 }
 
 /** Browser timers cannot represent a larger delay without overflowing. */
@@ -65,12 +75,16 @@ function defaultRegion(): RegionConfig {
   };
 }
 
+function defaultRightSidebarLayout(): RightSidebarLayout {
+  return { size: "cover", position: "center" };
+}
+
 export function createDefaultConfig(): BackgroundConfig {
   return {
     enabled: true,
     fullscreen: defaultRegion(),
     chat: defaultRegion(),
-    sidebar: defaultRegion(),
+    sidebar: { ...defaultRegion(), right: defaultRightSidebarLayout() },
   };
 }
 
@@ -78,6 +92,8 @@ const REGION_KEYS = new Set([
   "enabled", "images", "interval", "random", "opacity", "size",
   "position", "blur", "transition", "styles",
 ]);
+const SIDEBAR_KEYS = new Set([...REGION_KEYS, "right"]);
+const RIGHT_SIDEBAR_LAYOUT_KEYS = new Set(["size", "position"]);
 const IMAGE_STYLE_KEYS = new Set(["opacity", "size", "position", "blur"]);
 // Accept the retired field when reading v0.1.0 preferences; the session list
 // now shares its sidebar surface, so no independent setting is emitted.
@@ -219,7 +235,7 @@ function readRegion(value: unknown, path: RegionName, issues: string[]): RegionC
     issues.push(`${path}: expected a region configuration object`);
     return fallback;
   }
-  checkKeys(value, REGION_KEYS, path, issues);
+  checkKeys(value, path === "sidebar" ? SIDEBAR_KEYS : REGION_KEYS, path, issues);
   let images: string[] = [];
   if (value.images !== undefined) {
     if (Array.isArray(value.images)) {
@@ -247,6 +263,24 @@ function readRegion(value: unknown, path: RegionName, issues: string[]): RegionC
   };
 }
 
+function readSidebar(value: unknown, issues: string[]): SidebarConfig {
+  const region = readRegion(value, "sidebar", issues);
+  const fallback = defaultRightSidebarLayout();
+  if (!isRecord(value) || value.right === undefined) return { ...region, right: fallback };
+  if (!isRecord(value.right)) {
+    issues.push("sidebar.right: expected an object with image layout settings");
+    return { ...region, right: fallback };
+  }
+  checkKeys(value.right, RIGHT_SIDEBAR_LAYOUT_KEYS, "sidebar.right", issues);
+  return {
+    ...region,
+    right: {
+      size: readVisualString(value.right.size, fallback.size, "sidebar.right.size", issues, "size"),
+      position: readVisualString(value.right.position, fallback.position, "sidebar.right.position", issues, "position"),
+    },
+  };
+}
+
 /**
  * Missing fields receive defaults. Invalid values and unknown fields throw a
  * ConfigValidationError with every discovered issue; input is never mutated.
@@ -260,7 +294,7 @@ export function normalizeConfig(input: unknown): BackgroundConfig {
     enabled: readBoolean(input.enabled, true, "enabled", issues),
     fullscreen: readRegion(input.fullscreen, "fullscreen", issues),
     chat: readRegion(input.chat, "chat", issues),
-    sidebar: readRegion(input.sidebar, "sidebar", issues),
+    sidebar: readSidebar(input.sidebar, issues),
   };
   if (issues.length > 0) throw new ConfigValidationError(issues);
   return result;

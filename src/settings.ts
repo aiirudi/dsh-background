@@ -77,7 +77,7 @@ export function createSettingsPanel(
   function render() {
     root.replaceChildren();
     const style = el('style', CSS);
-    root.append(style, el('h2', '背景设置'), el('p', '为全局、聊天（含轨迹）和侧边栏设置图片与轮播。会话列表沿用侧边栏背景，右侧边栏共用图库并在打开时独立随机选图。'));
+    root.append(style, el('h2', '背景设置'), el('p', '为全局、聊天（含轨迹）和侧边栏设置图片与轮播。会话列表沿用侧边栏背景，右侧共用图库、独立选图，并单独设置缩放和位置。'));
     root.append(check('启用背景插件', draft.enabled, value => { draft.enabled = value; }));
     const tabs = el('div'); tabs.className = 'bg-tabs'; tabs.setAttribute('aria-label', '背景区域');
     for (const region of REGION_NAMES) {
@@ -92,9 +92,9 @@ export function createSettingsPanel(
     card.append(el('h3', `${LABELS[selected]} · ${selected}`));
     card.append(check('启用此区域', config.enabled, value => { config.enabled = value; }));
     const grid = el('div'); grid.className = 'bg-grid';
-    function field(text: string, name: string, input: HTMLInputElement | HTMLSelectElement) {
+    function field(text: string, name: string, input: HTMLInputElement | HTMLSelectElement, target: HTMLElement = grid) {
       const label = el('label'); label.className = 'bg-field'; input.name = name;
-      label.append(el('span', text), input); grid.append(label);
+      label.append(el('span', text), input); target.append(label);
     }
     for (const [key, label, min, max, step] of [
       ['opacity', '图片不透明度（0–1）', 0, 1, 0.05],
@@ -108,10 +108,25 @@ export function createSettingsPanel(
       field(label, key, input);
     }
     const size = el('input'); size.type = 'text'; size.value = config.size; size.placeholder = 'cover / contain / 100% auto';
-    size.addEventListener('input', () => { config.size = size.value; }); field('图片缩放方式', 'size', size);
+    size.addEventListener('input', () => { config.size = size.value; }); field(selected === 'sidebar' ? '左侧图片缩放方式' : '图片缩放方式', 'size', size);
     const position = el('input'); position.type = 'text'; position.value = config.position; position.placeholder = 'center / right bottom';
-    position.addEventListener('input', () => { config.position = position.value; }); field('图片位置', 'position', position);
+    position.addEventListener('input', () => { config.position = position.value; }); field(selected === 'sidebar' ? '左侧图片位置' : '图片位置', 'position', position);
     card.append(grid, check('随机播放', config.random, value => { config.random = value; }));
+    if (selected === 'sidebar') {
+      const right = draft.sidebar.right;
+      const layout = el('div'); layout.className = 'bg-card';
+      layout.append(el('h3', '右侧面板图片布局'));
+      const hint = el('p', '共用侧边栏图库，缩放和位置独立设置。默认 cover 随面板宽高自动铺满；修改位置可调整裁剪焦点。'); hint.className = 'bg-muted';
+      layout.append(hint);
+      const rightGrid = el('div'); rightGrid.className = 'bg-grid';
+      const rightSize = el('input'); rightSize.type = 'text'; rightSize.value = right.size; rightSize.placeholder = 'cover / contain / 100% 100%';
+      rightSize.addEventListener('input', () => { right.size = rightSize.value; }); field('右侧图片缩放方式', 'right.size', rightSize, rightGrid);
+      const rightPosition = el('input'); rightPosition.type = 'text'; rightPosition.value = right.position; rightPosition.placeholder = 'center / right bottom';
+      rightPosition.addEventListener('input', () => { right.position = rightPosition.value; }); field('右侧图片位置', 'right.position', rightPosition, rightGrid);
+      const rightActions = el('div'); rightActions.className = 'bg-actions';
+      rightActions.append(action('恢复右侧铺满', () => { right.size = 'cover'; right.position = 'center'; render(); message('右侧已恢复铺满，保存后生效。'); }));
+      layout.append(rightGrid, rightActions); root.append(card, layout);
+    } else root.append(card);
     const images = el('div'); images.className = 'bg-card'; images.append(el('h3', `图片列表（${config.images.length}）`));
     const hint = el('p', '支持 HTTP(S) 图片地址或导入本地图片。本地图片保存在当前浏览器或桌面端；建议使用压缩后的图片。'); hint.className = 'bg-muted'; images.append(hint);
     const row = el('div'); row.className = 'bg-url';
@@ -143,10 +158,10 @@ export function createSettingsPanel(
       const title = el('span', source.startsWith('data:') ? `本地图片 ${index + 1}` : source); title.title = source.startsWith('data:') ? '导入的本地图片' : source;
       imageRow.append(image, title, action('移除', () => { config.images.splice(index, 1); config.styles.splice(index, 1); render(); })); images.append(imageRow);
     });
-    root.append(card, images);
+    root.append(images);
     const actions = el('div'); actions.className = 'bg-actions';
     actions.append(action('保存并应用', () => {
-      try { const next = normalizeConfig(draft); onSave(next); draft = next; render(); message('背景配置已保存并应用。'); }
+      try { const next = normalizeConfig(draft); onSave(next); draft = normalizeConfig(next); render(); message('背景配置已保存并应用。'); }
       catch (cause) { message(cause instanceof Error ? cause.message : String(cause), true); }
     }, true), action('恢复默认配置', () => { draft = createDefaultConfig(); render(); message('已恢复默认配置，保存后生效。'); }));
     root.append(actions);
@@ -172,7 +187,7 @@ export function createSettingsPanel(
       try { draft = normalizeConfig(JSON.parse(await readFile(document, file, false))); render(); message('配置已导入，保存后生效。'); }
       catch (cause) { message(cause instanceof Error ? cause.message : String(cause), true); }
     }); importLabel.append(importFile);
-    const advancedHint = el('p', '使用 fullscreen、chat、sidebar 参数配置各区域。styles[i] 可覆盖第 i 张图片的 opacity、size、position 和 blur。'); advancedHint.className = 'bg-muted';
+    const advancedHint = el('p', '使用 fullscreen、chat、sidebar 参数配置各区域。styles[i] 可覆盖单张图片的 opacity、size、position 和 blur；sidebar.right 单独控制右侧的 size 和 position。'); advancedHint.className = 'bg-muted';
     advanced.append(advancedHint, json, advancedActions, importLabel); root.append(advanced);
     status = el('p'); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); root.append(status);
   }

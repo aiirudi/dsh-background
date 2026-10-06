@@ -38,6 +38,7 @@
     "opacity": 0.25,
     "size": "cover",
     "position": "left top",
+    "right": { "size": "cover", "position": "center" },
     "blur": 1,
     "transition": 0.5,
     "styles": []

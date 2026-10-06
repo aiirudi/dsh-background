@@ -33,12 +33,15 @@ ${issues.join("\n")}`);
       styles: []
     };
   }
+  function defaultRightSidebarLayout() {
+    return { size: "cover", position: "center" };
+  }
   function createDefaultConfig() {
     return {
       enabled: true,
       fullscreen: defaultRegion(),
       chat: defaultRegion(),
-      sidebar: defaultRegion()
+      sidebar: { ...defaultRegion(), right: defaultRightSidebarLayout() }
     };
   }
   var REGION_KEYS = /* @__PURE__ */ new Set([
@@ -53,6 +56,8 @@ ${issues.join("\n")}`);
     "transition",
     "styles"
   ]);
+  var SIDEBAR_KEYS = /* @__PURE__ */ new Set([...REGION_KEYS, "right"]);
+  var RIGHT_SIDEBAR_LAYOUT_KEYS = /* @__PURE__ */ new Set(["size", "position"]);
   var IMAGE_STYLE_KEYS = /* @__PURE__ */ new Set(["opacity", "size", "position", "blur"]);
   var CONFIG_KEYS = /* @__PURE__ */ new Set(["enabled", ...REGION_NAMES, "sessionList"]);
   var NUMBER_WITH_UNIT = "(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:px|%|em|rem|vh|vw|vmin|vmax)";
@@ -154,7 +159,7 @@ ${issues.join("\n")}`);
       issues.push(`${path}: expected a region configuration object`);
       return fallback;
     }
-    checkKeys(value, REGION_KEYS, path, issues);
+    checkKeys(value, path === "sidebar" ? SIDEBAR_KEYS : REGION_KEYS, path, issues);
     let images = [];
     if (value.images !== void 0) {
       if (Array.isArray(value.images)) {
@@ -181,6 +186,23 @@ ${issues.join("\n")}`);
       styles
     };
   }
+  function readSidebar(value, issues) {
+    const region = readRegion(value, "sidebar", issues);
+    const fallback = defaultRightSidebarLayout();
+    if (!isRecord(value) || value.right === void 0) return { ...region, right: fallback };
+    if (!isRecord(value.right)) {
+      issues.push("sidebar.right: expected an object with image layout settings");
+      return { ...region, right: fallback };
+    }
+    checkKeys(value.right, RIGHT_SIDEBAR_LAYOUT_KEYS, "sidebar.right", issues);
+    return {
+      ...region,
+      right: {
+        size: readVisualString(value.right.size, fallback.size, "sidebar.right.size", issues, "size"),
+        position: readVisualString(value.right.position, fallback.position, "sidebar.right.position", issues, "position")
+      }
+    };
+  }
   function normalizeConfig(input) {
     if (input === void 0) return createDefaultConfig();
     if (!isRecord(input)) throw new ConfigValidationError(["configuration: expected an object"]);
@@ -190,7 +212,7 @@ ${issues.join("\n")}`);
       enabled: readBoolean(input.enabled, true, "enabled", issues),
       fullscreen: readRegion(input.fullscreen, "fullscreen", issues),
       chat: readRegion(input.chat, "chat", issues),
-      sidebar: readRegion(input.sidebar, "sidebar", issues)
+      sidebar: readSidebar(input.sidebar, issues)
     };
     if (issues.length > 0) throw new ConfigValidationError(issues);
     return result;
@@ -289,8 +311,8 @@ ${issues.join("\n")}`);
       const override = base.styles[region.imageIndex];
       const blur = override?.blur ?? base.blur;
       plane.style.backgroundImage = imageCssUrl(base.images[region.imageIndex]);
-      plane.style.backgroundSize = override?.size ?? base.size;
-      plane.style.backgroundPosition = override?.position ?? base.position;
+      plane.style.backgroundSize = region.layoutOverrides?.size ?? override?.size ?? base.size;
+      plane.style.backgroundPosition = region.layoutOverrides?.position ?? override?.position ?? base.position;
       plane.style.filter = blur === 0 ? "none" : `blur(${blur}px)`;
       plane.style.inset = blur === 0 ? "0px" : `${-Math.ceil(blur * 2)}px`;
       plane.style.transition = `opacity ${base.transition}s ease`;
@@ -398,6 +420,7 @@ ${issues.join("\n")}`);
             name: "sidebar",
             config: sidebar.config,
             imageIndex: randomIndex(sidebar.config),
+            layoutOverrides: config.sidebar.right,
             mounts: /* @__PURE__ */ new Map(),
             timer: void 0
           };
@@ -583,6 +606,7 @@ ${issues.join("\n")}`);
           stopTimer(region);
           const currentImage = region.config.images[region.imageIndex];
           region.config = next.sidebar;
+          region.layoutOverrides = next.sidebar.right;
           const retainedIndex = currentImage === void 0 ? -1 : region.config.images.indexOf(currentImage);
           region.imageIndex = retainedIndex >= 0 ? retainedIndex : randomIndex(region.config);
         }
@@ -683,7 +707,7 @@ ${issues.join("\n")}`);
     function render() {
       root.replaceChildren();
       const style = el("style", CSS);
-      root.append(style, el("h2", "\u80CC\u666F\u8BBE\u7F6E"), el("p", "\u4E3A\u5168\u5C40\u3001\u804A\u5929\uFF08\u542B\u8F68\u8FF9\uFF09\u548C\u4FA7\u8FB9\u680F\u8BBE\u7F6E\u56FE\u7247\u4E0E\u8F6E\u64AD\u3002\u4F1A\u8BDD\u5217\u8868\u6CBF\u7528\u4FA7\u8FB9\u680F\u80CC\u666F\uFF0C\u53F3\u4FA7\u8FB9\u680F\u5171\u7528\u56FE\u5E93\u5E76\u5728\u6253\u5F00\u65F6\u72EC\u7ACB\u968F\u673A\u9009\u56FE\u3002"));
+      root.append(style, el("h2", "\u80CC\u666F\u8BBE\u7F6E"), el("p", "\u4E3A\u5168\u5C40\u3001\u804A\u5929\uFF08\u542B\u8F68\u8FF9\uFF09\u548C\u4FA7\u8FB9\u680F\u8BBE\u7F6E\u56FE\u7247\u4E0E\u8F6E\u64AD\u3002\u4F1A\u8BDD\u5217\u8868\u6CBF\u7528\u4FA7\u8FB9\u680F\u80CC\u666F\uFF0C\u53F3\u4FA7\u5171\u7528\u56FE\u5E93\u3001\u72EC\u7ACB\u9009\u56FE\uFF0C\u5E76\u5355\u72EC\u8BBE\u7F6E\u7F29\u653E\u548C\u4F4D\u7F6E\u3002"));
       root.append(check("\u542F\u7528\u80CC\u666F\u63D2\u4EF6", draft.enabled, (value) => {
         draft.enabled = value;
       }));
@@ -709,12 +733,12 @@ ${issues.join("\n")}`);
       }));
       const grid = el("div");
       grid.className = "bg-grid";
-      function field(text, name, input) {
+      function field(text, name, input, target = grid) {
         const label = el("label");
         label.className = "bg-field";
         input.name = name;
         label.append(el("span", text), input);
-        grid.append(label);
+        target.append(label);
       }
       for (const [key, label, min, max, step] of [
         ["opacity", "\u56FE\u7247\u4E0D\u900F\u660E\u5EA6\uFF080\u20131\uFF09", 0, 1, 0.05],
@@ -740,7 +764,7 @@ ${issues.join("\n")}`);
       size.addEventListener("input", () => {
         config.size = size.value;
       });
-      field("\u56FE\u7247\u7F29\u653E\u65B9\u5F0F", "size", size);
+      field(selected === "sidebar" ? "\u5DE6\u4FA7\u56FE\u7247\u7F29\u653E\u65B9\u5F0F" : "\u56FE\u7247\u7F29\u653E\u65B9\u5F0F", "size", size);
       const position = el("input");
       position.type = "text";
       position.value = config.position;
@@ -748,10 +772,47 @@ ${issues.join("\n")}`);
       position.addEventListener("input", () => {
         config.position = position.value;
       });
-      field("\u56FE\u7247\u4F4D\u7F6E", "position", position);
+      field(selected === "sidebar" ? "\u5DE6\u4FA7\u56FE\u7247\u4F4D\u7F6E" : "\u56FE\u7247\u4F4D\u7F6E", "position", position);
       card.append(grid, check("\u968F\u673A\u64AD\u653E", config.random, (value) => {
         config.random = value;
       }));
+      if (selected === "sidebar") {
+        const right = draft.sidebar.right;
+        const layout = el("div");
+        layout.className = "bg-card";
+        layout.append(el("h3", "\u53F3\u4FA7\u9762\u677F\u56FE\u7247\u5E03\u5C40"));
+        const hint2 = el("p", "\u5171\u7528\u4FA7\u8FB9\u680F\u56FE\u5E93\uFF0C\u7F29\u653E\u548C\u4F4D\u7F6E\u72EC\u7ACB\u8BBE\u7F6E\u3002\u9ED8\u8BA4 cover \u968F\u9762\u677F\u5BBD\u9AD8\u81EA\u52A8\u94FA\u6EE1\uFF1B\u4FEE\u6539\u4F4D\u7F6E\u53EF\u8C03\u6574\u88C1\u526A\u7126\u70B9\u3002");
+        hint2.className = "bg-muted";
+        layout.append(hint2);
+        const rightGrid = el("div");
+        rightGrid.className = "bg-grid";
+        const rightSize = el("input");
+        rightSize.type = "text";
+        rightSize.value = right.size;
+        rightSize.placeholder = "cover / contain / 100% 100%";
+        rightSize.addEventListener("input", () => {
+          right.size = rightSize.value;
+        });
+        field("\u53F3\u4FA7\u56FE\u7247\u7F29\u653E\u65B9\u5F0F", "right.size", rightSize, rightGrid);
+        const rightPosition = el("input");
+        rightPosition.type = "text";
+        rightPosition.value = right.position;
+        rightPosition.placeholder = "center / right bottom";
+        rightPosition.addEventListener("input", () => {
+          right.position = rightPosition.value;
+        });
+        field("\u53F3\u4FA7\u56FE\u7247\u4F4D\u7F6E", "right.position", rightPosition, rightGrid);
+        const rightActions = el("div");
+        rightActions.className = "bg-actions";
+        rightActions.append(action("\u6062\u590D\u53F3\u4FA7\u94FA\u6EE1", () => {
+          right.size = "cover";
+          right.position = "center";
+          render();
+          message("\u53F3\u4FA7\u5DF2\u6062\u590D\u94FA\u6EE1\uFF0C\u4FDD\u5B58\u540E\u751F\u6548\u3002");
+        }));
+        layout.append(rightGrid, rightActions);
+        root.append(card, layout);
+      } else root.append(card);
       const images = el("div");
       images.className = "bg-card";
       images.append(el("h3", `\u56FE\u7247\u5217\u8868\uFF08${config.images.length}\uFF09`));
@@ -816,14 +877,14 @@ ${issues.join("\n")}`);
         }));
         images.append(imageRow);
       });
-      root.append(card, images);
+      root.append(images);
       const actions = el("div");
       actions.className = "bg-actions";
       actions.append(action("\u4FDD\u5B58\u5E76\u5E94\u7528", () => {
         try {
           const next = normalizeConfig(draft);
           onSave(next);
-          draft = next;
+          draft = normalizeConfig(next);
           render();
           message("\u80CC\u666F\u914D\u7F6E\u5DF2\u4FDD\u5B58\u5E76\u5E94\u7528\u3002");
         } catch (cause) {
@@ -884,7 +945,7 @@ ${issues.join("\n")}`);
         }
       });
       importLabel.append(importFile);
-      const advancedHint = el("p", "\u4F7F\u7528 fullscreen\u3001chat\u3001sidebar \u53C2\u6570\u914D\u7F6E\u5404\u533A\u57DF\u3002styles[i] \u53EF\u8986\u76D6\u7B2C i \u5F20\u56FE\u7247\u7684 opacity\u3001size\u3001position \u548C blur\u3002");
+      const advancedHint = el("p", "\u4F7F\u7528 fullscreen\u3001chat\u3001sidebar \u53C2\u6570\u914D\u7F6E\u5404\u533A\u57DF\u3002styles[i] \u53EF\u8986\u76D6\u5355\u5F20\u56FE\u7247\u7684 opacity\u3001size\u3001position \u548C blur\uFF1Bsidebar.right \u5355\u72EC\u63A7\u5236\u53F3\u4FA7\u7684 size \u548C position\u3002");
       advancedHint.className = "bg-muted";
       advanced.append(advancedHint, json, advancedActions, importLabel);
       root.append(advanced);

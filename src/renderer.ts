@@ -4,6 +4,7 @@ import {
   type BackgroundConfig,
   type RegionConfig,
   type RegionName,
+  type RightSidebarLayout,
 } from "./config.js";
 
 export const DEFAULT_SELECTORS: Readonly<Record<RegionName, string>> = {
@@ -38,6 +39,7 @@ interface RegionRuntime {
   imageIndex: number;
   mounts: Map<HTMLElement, MountedHost>;
   timer: number | undefined;
+  layoutOverrides?: RightSidebarLayout;
 }
 
 let nextOwnerId = 0;
@@ -144,8 +146,8 @@ export function mountBackgrounds(
     const override = base.styles[region.imageIndex];
     const blur = override?.blur ?? base.blur;
     plane.style.backgroundImage = imageCssUrl(base.images[region.imageIndex]!);
-    plane.style.backgroundSize = override?.size ?? base.size;
-    plane.style.backgroundPosition = override?.position ?? base.position;
+    plane.style.backgroundSize = region.layoutOverrides?.size ?? override?.size ?? base.size;
+    plane.style.backgroundPosition = region.layoutOverrides?.position ?? override?.position ?? base.position;
     plane.style.filter = blur === 0 ? "none" : `blur(${blur}px)`;
     plane.style.inset = blur === 0 ? "0px" : `${-Math.ceil(blur * 2)}px`;
     plane.style.transition = `opacity ${base.transition}s ease`;
@@ -261,6 +263,7 @@ export function mountBackgrounds(
       if (!region) {
         region = {
           name: "sidebar", config: sidebar.config, imageIndex: randomIndex(sidebar.config),
+          layoutOverrides: config.sidebar.right,
           mounts: new Map(), timer: undefined,
         };
         rightRegions.set(panel, region);
@@ -468,6 +471,7 @@ export function mountBackgrounds(
         stopTimer(region);
         const currentImage = region.config.images[region.imageIndex];
         region.config = next.sidebar;
+        region.layoutOverrides = next.sidebar.right;
         const retainedIndex = currentImage === undefined ? -1 : region.config.images.indexOf(currentImage);
         region.imageIndex = retainedIndex >= 0 ? retainedIndex : randomIndex(region.config);
       }
