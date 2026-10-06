@@ -17,4 +17,5 @@ await build({
   format: 'iife',
   platform: 'browser',
   target: 'chrome120',
+  loader: { '.png': 'dataurl' },
 });

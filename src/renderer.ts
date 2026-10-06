@@ -10,7 +10,6 @@ export const DEFAULT_SELECTORS: Readonly<Record<RegionName, string>> = {
   fullscreen: '[data-dsh-background-region="fullscreen"], [data-slot="root"] > *',
   chat: '[data-dsh-background-region="chat"], [data-slot="main.conversation"] > *',
   sidebar: '[data-dsh-background-region="sidebar"], [data-slot="sidebar"] > *',
-  sessionList: '[data-dsh-background-region="sessionList"], [data-slot="sidebar.workspaces"] > *',
 };
 
 export interface BackgroundController {
@@ -94,11 +93,13 @@ export function mountBackgrounds(
     [data-dsh-background-layer][data-dsh-background-owner="${ownerId}"] {
       position: absolute; inset: 0; z-index: -1; overflow: hidden;
       pointer-events: none !important; user-select: none !important;
+      visibility: var(--dsh-background-image-visibility, inherit);
       border-radius: inherit;
     }
     [data-dsh-background-plane][data-dsh-background-owner="${ownerId}"] {
       position: absolute; inset: 0; opacity: 0;
       background-repeat: no-repeat; pointer-events: none !important;
+      visibility: var(--dsh-background-image-visibility, inherit);
     }
   `;
   const regions = REGION_NAMES.map((name): RegionRuntime => ({
@@ -223,32 +224,92 @@ export function mountBackgrounds(
   }
 
   function reconcileTransparentSurfaces(): void {
-    const desired = new Set<HTMLElement>();
+    const desired = new Map<HTMLElement, Record<string, string>>();
+    const transparentBackground = { "background-color": "transparent" };
+    function addWorkspaceSurfaces(host: HTMLElement): void {
+      for (const surface of host.querySelectorAll('[data-slot="sidebar.workspaces"] > *')) {
+        if (!(surface instanceof window!.HTMLElement) || owned(surface)) continue;
+        // WorkspaceBrowser's bottom fade is the only consumer of this fill inside
+        // the browsing subtree. Clear its endpoint without changing row states.
+        desired.set(surface, { ...transparentBackground, "--dsw-specific-sidebar-fill": "transparent" });
+      }
+    }
     const fullscreen = regions[0]!;
     if (enabled(fullscreen)) {
       for (const mount of fullscreen.mounts.values()) {
-        desired.add(mount.host);
+        desired.set(mount.host, transparentBackground);
         // These are the opaque structural surfaces in Harness Web and Desktop.
         // Keep controls, menus, message cards, and other descendants untouched.
         for (const surface of mount.host.querySelectorAll('[data-slot="sidebar"] > *, [data-slot="main.conversation"] > *')) {
-          if (surface instanceof window!.HTMLElement && !owned(surface)) desired.add(surface);
+          if (surface instanceof window!.HTMLElement && !owned(surface)) desired.set(surface, transparentBackground);
         }
         for (const slot of mount.host.querySelectorAll('[data-slot="sidebar"], [data-slot="main"]')) {
           const column = slot.parentElement;
-          if (column instanceof window!.HTMLElement && mount.host.contains(column)) desired.add(column);
+          if (column instanceof window!.HTMLElement && mount.host.contains(column)) desired.set(column, transparentBackground);
+        }
+        addWorkspaceSurfaces(mount.host);
+      }
+    }
+    const sidebar = regions.find((region) => region.name === "sidebar")!;
+    if (enabled(sidebar)) {
+      for (const mount of sidebar.mounts.values()) addWorkspaceSurfaces(mount.host);
+    }
+    if (regions.some((region) => enabled(region) && region.mounts.size > 0)) {
+      // Harness Settings portals beside the root, so it must be found document-wide.
+      // Its nav/content are transparent; tint only the panel and shared settings cards.
+      let settingsOpen = false;
+      for (const panel of document.querySelectorAll('[data-shortcut-modal="settings"]')) {
+        if (!(panel instanceof window!.HTMLElement) || owned(panel)) continue;
+        settingsOpen = true;
+        desired.set(panel, {
+          "background-color": "color-mix(in srgb, var(--dsw-alias-bg-layer-2) 30%, transparent)",
+          "--dsw-alias-settings-card-fill": "color-mix(in srgb, var(--dsw-alias-bg-layer-2) 20%, transparent)",
+        });
+        // The actual SettingsRoot mask is the panel's aria-hidden preceding sibling.
+        // Keep the mask's click handling, but remove the fill/blur covering the image.
+        const overlay = panel.parentElement;
+        const mask = panel.previousElementSibling;
+        if (overlay?.parentElement === document.body && overlay.getAttribute("role") === "presentation"
+          && mask instanceof window!.HTMLElement && mask.getAttribute("aria-hidden") === "true") {
+          desired.set(mask, { "background-color": "transparent", "backdrop-filter": "none" });
+        }
+      }
+      if (settingsOpen) {
+        for (const main of document.querySelectorAll('[data-slot="main"]')) {
+          if (!(main instanceof window!.HTMLElement) || owned(main)) continue;
+          // Hide underlying panel/chat text without changing layout or carousel layers.
+          // Only our image elements consume the visibility override; Settings is a body portal.
+          desired.set(main, {
+            ...desired.get(main),
+            visibility: "hidden",
+            "--dsh-background-image-visibility": "visible",
+          });
         }
       }
     }
     for (const [surface, saved] of transparentSurfaces) {
-      if (!desired.has(surface)) {
+      const styles = desired.get(surface);
+      if (!styles) {
         restoreStyles(surface, saved);
         transparentSurfaces.delete(surface);
+      } else {
+        const removed = saved.filter((style) => !Object.hasOwn(styles, style.property));
+        if (removed.length > 0) {
+          restoreStyles(surface, removed);
+          transparentSurfaces.set(surface, saved.filter((style) => Object.hasOwn(styles, style.property)));
+        }
       }
     }
-    for (const surface of desired) {
-      if (!transparentSurfaces.has(surface)) {
-        transparentSurfaces.set(surface, [saveStyle(surface, "background-color")]);
-        surface.style.setProperty("background-color", "transparent", "important");
+    for (const [surface, styles] of desired) {
+      let saved = transparentSurfaces.get(surface);
+      if (!saved) {
+        saved = [];
+        transparentSurfaces.set(surface, saved);
+      }
+      for (const [property, value] of Object.entries(styles)) {
+        if (saved.some((style) => style.property === property)) continue;
+        saved.push(saveStyle(surface, property));
+        surface.style.setProperty(property, value, "important");
       }
     }
   }

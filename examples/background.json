@@ -41,17 +41,5 @@
     "blur": 1,
     "transition": 0.5,
     "styles": []
-  },
-  "sessionList": {
-    "enabled": false,
-    "images": ["https://images.example.com/session-list.jpg"],
-    "interval": 0,
-    "random": false,
-    "opacity": 0.2,
-    "size": "cover",
-    "position": "center",
-    "blur": 0,
-    "transition": 0.5,
-    "styles": []
   }
 }

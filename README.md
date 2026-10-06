@@ -1,6 +1,6 @@
 # dsh-background
 
-为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Web 与官方 Desktop 客户端分别设置全局、聊天、侧边栏和会话列表背景。四个区域可以同时使用不同图片、轮播间隔和样式。
+为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Web 与官方 Desktop 客户端分别设置全局、聊天和侧边栏背景。三个区域可以同时使用不同图片、轮播间隔和样式，会话列表沿用侧边栏背景。
 
 项目仓库：[aiirudi/dsh-background](https://github.com/aiirudi/dsh-background)。
 
@@ -16,7 +16,7 @@
 dsh plugin --profile web add github:aiirudi/dsh-background#main
 ```
 
-重启 Web 服务并刷新页面。需要固定到当前迭代分支时，把 `#main` 换为 `#v0.1.0`。
+重启 Web 服务并刷新页面。迭代分支仅保留在本地，GitHub 安装使用 `#main`。
 
 ### Desktop
 
@@ -45,30 +45,35 @@ npm run build
 npm pack
 ```
 
-完成上述构建后，`npm pack` 输出 `dsh-background-0.1.0.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径，例如：
+完成上述构建后，`npm pack` 输出 `dsh-background-0.1.1.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径，例如：
 
 ```sh
-dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-background-0.1.0.tgz"
+dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-background-0.1.1.tgz"
 ```
 
 ## 设置背景
 
-打开 Harness 设置中的 **背景 / Background** 页面，选择区域，启用背景并添加图片。点击保存后立即应用；关闭某个区域只关闭该区域的背景。
+点击主侧边栏的 **背景设置**，即可直接进入背景配置页面。入口排在自动化任务后面，使用本项目的 [asset/icon.png](./asset/icon.png) 图标；侧边栏收起时仍可通过图标打开。设置弹窗内原有的 **背景 / Background** 入口也保留，两处使用同一份背景配置。
+
+选择区域，启用背景并添加图片。点击保存后立即应用；关闭某个区域只关闭该区域的背景。
+
+有背景显示时，Harness 内置设置弹窗也会透出已有背景，文字和按钮保持正常不透明度。弹窗打开期间，主区域的底层内容暂时隐藏，只保留背景图，避免两层文字重叠；关闭弹窗后恢复内容。关闭背景后，设置弹窗恢复原来的样式。
 
 | 区域参数 | 应用位置 |
 | --- | --- |
 | `fullscreen` | 整个应用界面的底层背景 |
 | `chat` | 聊天主区域，包括空会话页面 |
-| `sidebar` | 左侧导航栏 |
-| `sessionList` | 侧边栏内的会话与工作区浏览区域，包括搜索栏和列表 |
+| `sidebar` | 整个左侧导航栏，包括会话与工作区列表 |
 
-`sessionList` 对应 Harness 的 `WorkspaceBrowser`，不是每条消息或单独一个会话条目。各区域独立配置；`fullscreen` 位于底层，聊天、侧边栏和会话列表可以在它上面叠加自己的背景。图片的 `opacity` 只控制背景图片，文字和操作控件不会一起变透明。
+各区域独立配置；`fullscreen` 位于底层，聊天和侧边栏可以在它上面叠加自己的背景。图片的 `opacity` 只控制背景图片，文字和操作控件不会一起变透明。会话列表与侧边栏使用同一张背景，不再单独设置；显示侧边栏背景时，会话列表底部的分隔渐变也会移除。
 
-首次安装默认不显示图片：顶层与四个区域的 `enabled` 均为 `true`，图片列表为空。添加图片并保存后即可显示。
+旧版配置中的 `sessionList` 会被忽略，已有的 `fullscreen`、`chat` 和 `sidebar` 配置保持可用。保存或导出后，配置只包含这三个区域。
+
+首次安装默认不显示图片：顶层与三个区域的 `enabled` 均为 `true`，图片列表为空。添加图片并保存后即可显示。
 
 ### 参数
 
-顶层 `enabled` 是整个插件的开关。以下参数在四个区域内分别设置：
+顶层 `enabled` 是整个插件的开关。以下参数在三个区域内分别设置：
 
 | 参数 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -113,7 +118,7 @@ dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-backgro
 }
 ```
 
-示例中的域名和图片路径是占位地址。先替换为自己的图片，再把区域 `enabled` 改为 `true`。完整的四区域配置见 [examples/background.json](./examples/background.json)，同样默认关闭占位图片。
+示例中的域名和图片路径是占位地址。先替换为自己的图片，再把区域 `enabled` 改为 `true`。完整的三区域配置见 [examples/background.json](./examples/background.json)，同样默认关闭占位图片。
 
 JSON 是本插件设置页面使用的配置格式；背景设置保存在客户端，不通过 `cordis.patch.yml` 的 Host `config` 设置。
 
@@ -129,15 +134,15 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 
 ## 开发约定
 
-`main` 是开发主干。每次迭代可以使用 `v0.1.0` 这样的分支开发，完成验证后合并回 `main`；后续迭代相应使用新的版本分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
+`main` 是开发主干。每次迭代可以使用 `v0.1.1` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
 
-测试代码统一放在本地 `tests/`。按本项目约定，`tests/`、`.agents/`、`.claude/` 以及其他运行时临时产物不上传到仓库，也不进入安装包；本地开发环境保留测试时，可执行 `npm test` 和 `npm run test:browser`。安装包通过 `files` 白名单仅包含构建产物、插件配置、示例和文档。
+测试代码统一放在本地 `tests/`。按本项目约定，`tests/`、`.agents/`、`.claude/` 以及其他运行时临时产物不上传到仓库，也不进入安装包；本地开发环境保留测试时，可执行 `npm test` 和 `npm run test:browser`。安装包通过 `files` 白名单仅包含构建产物、插件配置、图标、示例和文档。
 
 ## 兼容性
 
 插件包格式、客户端工厂、设置页扩展和区域定位已按官方源码的 `dsh-v0.2.0-rc.2`（`639ed015397290b3745d163aafe02ffee4aa3f84`）及 `master` 的 `0.2.1-alpha.1` 源码（`5badb15009ae1756c3afe0ae0cef1faafc290ccc`）核对。官方 Desktop 使用同一套 Web 客户端，插件声明 `dsh.client.platform: "web"`。
 
-`v0.1.0` 已通过类型检查、构建、19 项本地单元测试和 4 项 Chromium 浏览器测试。在隔离的官方 `@deepseek-ai/dsh@0.2.0-rc.2` Web profile 中，已验证安装、真实设置页加载、四区域分别上传图片、同时显示与刷新后的配置恢复。
+`v0.1.1` 已通过类型检查、构建、28 项本地单元测试和 6 项 Chromium 浏览器测试。在隔离的官方 `@deepseek-ai/dsh@0.2.0-rc.2` Web profile 中，已验证侧边栏快捷入口与设置弹窗内原入口并存、两处保存后的配置同步、原 PNG 图标、收起侧栏的入口、三个区域配置与会话列表共用侧边栏背景，以及深色和浅色主题下的透明设置弹窗、底层文字隐藏与关闭后的恢复，无页面错误。自动化任务下方的位置通过官方入口排序契约验证。
 
 Desktop 的适配依据其共用 Web 客户端与官方插件接口；尚未在 Electron Desktop 中实机验证。Harness 的插件 API 尚未稳定，之后的版本可能需要适配。
 

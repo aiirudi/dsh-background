@@ -2,7 +2,7 @@ import { createDefaultConfig, normalizeConfig, REGION_NAMES } from './config.js'
 import type { BackgroundConfig, RegionName } from './config.js';
 
 const LABELS: Record<RegionName, string> = {
-  fullscreen: '全局背景', chat: '聊天区域', sidebar: '侧边栏', sessionList: '会话列表',
+  fullscreen: '全局背景', chat: '聊天区域', sidebar: '侧边栏',
 };
 
 const CSS = `
@@ -77,7 +77,7 @@ export function createSettingsPanel(
   function render() {
     root.replaceChildren();
     const style = el('style', CSS);
-    root.append(style, el('h2', '背景设置'), el('p', '为全局、聊天、侧边栏和会话列表分别设置图片与轮播。'));
+    root.append(style, el('h2', '背景设置'), el('p', '为全局、聊天和侧边栏分别设置图片与轮播。会话列表沿用侧边栏背景。'));
     root.append(check('启用背景插件', draft.enabled, value => { draft.enabled = value; }));
     const tabs = el('div'); tabs.className = 'bg-tabs'; tabs.setAttribute('aria-label', '背景区域');
     for (const region of REGION_NAMES) {
@@ -172,7 +172,7 @@ export function createSettingsPanel(
       try { draft = normalizeConfig(JSON.parse(await readFile(document, file, false))); render(); message('配置已导入，保存后生效。'); }
       catch (cause) { message(cause instanceof Error ? cause.message : String(cause), true); }
     }); importLabel.append(importFile);
-    const advancedHint = el('p', '使用 fullscreen、chat、sidebar、sessionList 参数配置各区域。styles[i] 可覆盖第 i 张图片的 opacity、size、position 和 blur。'); advancedHint.className = 'bg-muted';
+    const advancedHint = el('p', '使用 fullscreen、chat、sidebar 参数配置各区域。styles[i] 可覆盖第 i 张图片的 opacity、size、position 和 blur。'); advancedHint.className = 'bg-muted';
     advanced.append(advancedHint, json, advancedActions, importLabel); root.append(advanced);
     status = el('p'); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); root.append(status);
   }

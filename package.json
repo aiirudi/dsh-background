@@ -1,23 +1,55 @@
 {
   "name": "dsh-background",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Independent background images and carousels for DeepSeek Harness Web and Desktop.",
   "type": "module",
   "license": "MIT",
   "author": "aiirudi",
-  "repository": { "type": "git", "url": "https://github.com/aiirudi/dsh-background.git" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aiirudi/dsh-background.git"
+  },
   "homepage": "https://github.com/aiirudi/dsh-background#readme",
-  "bugs": { "url": "https://github.com/aiirudi/dsh-background/issues" },
-  "keywords": ["dsh-plugin", "deepseek-harness", "background", "wallpaper", "carousel"],
-  "engines": { "node": ">=22.19.0" },
-  "exports": { ".": "./dist/index.js", "./client": "./dist/client.js" },
-  "files": ["dist", "cordis.patch.yml", "examples", "README.md", "LICENSE"],
+  "bugs": {
+    "url": "https://github.com/aiirudi/dsh-background/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "background",
+    "wallpaper",
+    "carousel"
+  ],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./client": "./dist/client.js",
+    "./icon": "./asset/icon.png"
+  },
+  "files": [
+    "dist",
+    "asset/icon.png",
+    "cordis.patch.yml",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "immediately": true,
-      "inject": ["@deepseek-ai/dsh-client-ui-layout", "@deepseek-ai/dsh-client-ui-sidebar", "@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-workspace", "@deepseek-ai/dsh-client-ui-settings-general"]
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-settings-general"
+      ]
     }
   },
   "scripts": {

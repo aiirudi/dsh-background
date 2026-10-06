@@ -2,7 +2,6 @@ export const REGION_NAMES = [
   "fullscreen",
   "chat",
   "sidebar",
-  "sessionList",
 ] as const;
 
 export type RegionName = (typeof REGION_NAMES)[number];
@@ -36,7 +35,6 @@ export interface BackgroundConfig {
   fullscreen: RegionConfig;
   chat: RegionConfig;
   sidebar: RegionConfig;
-  sessionList: RegionConfig;
 }
 
 /** Browser timers cannot represent a larger delay without overflowing. */
@@ -73,7 +71,6 @@ export function createDefaultConfig(): BackgroundConfig {
     fullscreen: defaultRegion(),
     chat: defaultRegion(),
     sidebar: defaultRegion(),
-    sessionList: defaultRegion(),
   };
 }
 
@@ -82,7 +79,9 @@ const REGION_KEYS = new Set([
   "position", "blur", "transition", "styles",
 ]);
 const IMAGE_STYLE_KEYS = new Set(["opacity", "size", "position", "blur"]);
-const CONFIG_KEYS = new Set<string>(["enabled", ...REGION_NAMES]);
+// Accept the retired field when reading v0.1.0 preferences; the session list
+// now shares its sidebar surface, so no independent setting is emitted.
+const CONFIG_KEYS = new Set<string>(["enabled", ...REGION_NAMES, "sessionList"]);
 const NUMBER_WITH_UNIT = "(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:px|%|em|rem|vh|vw|vmin|vmax)";
 const NONNEGATIVE_LENGTH = new RegExp(`^(?:${NUMBER_WITH_UNIT}|0(?:\\.0+)?)$`);
 const POSITION_LENGTH = new RegExp(`^[+-]?(?:${NUMBER_WITH_UNIT}|0(?:\\.0+)?)$`);
@@ -262,7 +261,6 @@ export function normalizeConfig(input: unknown): BackgroundConfig {
     fullscreen: readRegion(input.fullscreen, "fullscreen", issues),
     chat: readRegion(input.chat, "chat", issues),
     sidebar: readRegion(input.sidebar, "sidebar", issues),
-    sessionList: readRegion(input.sessionList, "sessionList", issues),
   };
   if (issues.length > 0) throw new ConfigValidationError(issues);
   return result;
