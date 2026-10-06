@@ -45,15 +45,15 @@ npm run build
 npm pack
 ```
 
-完成上述构建后，`npm pack` 输出 `dsh-background-0.1.1.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径，例如：
+完成上述构建后，`npm pack` 输出 `dsh-background-0.1.2.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径，例如：
 
 ```sh
-dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-background-0.1.1.tgz"
+dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-background-0.1.2.tgz"
 ```
 
 ## 设置背景
 
-点击主侧边栏的 **背景设置**，即可直接进入背景配置页面。入口排在自动化任务后面，使用本项目的 [asset/icon.png](./asset/icon.png) 图标；侧边栏收起时仍可通过图标打开。设置弹窗内原有的 **背景 / Background** 入口也保留，两处使用同一份背景配置。
+点击主侧边栏的 **背景设置**，即可直接进入背景配置页面。入口排在自动化任务后面；侧边栏收起时仍可通过图标打开。设置弹窗内原有的 **背景 / Background** 入口也保留，两处均使用本项目的 [asset/icon.png](./asset/icon.png) 图标和同一份背景配置。
 
 选择区域，启用背景并添加图片。点击保存后立即应用；关闭某个区域只关闭该区域的背景。
 
@@ -134,7 +134,7 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 
 ## 开发约定
 
-`main` 是开发主干。每次迭代可以使用 `v0.1.1` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
+`main` 是开发主干。每次迭代可以使用 `v0.1.2` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
 
 测试代码统一放在本地 `tests/`。按本项目约定，`tests/`、`.agents/`、`.claude/` 以及其他运行时临时产物不上传到仓库，也不进入安装包；本地开发环境保留测试时，可执行 `npm test` 和 `npm run test:browser`。安装包通过 `files` 白名单仅包含构建产物、插件配置、图标、示例和文档。
 
@@ -143,6 +143,8 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 插件包格式、客户端工厂、设置页扩展和区域定位已按官方源码的 `dsh-v0.2.0-rc.2`（`639ed015397290b3745d163aafe02ffee4aa3f84`）及 `master` 的 `0.2.1-alpha.1` 源码（`5badb15009ae1756c3afe0ae0cef1faafc290ccc`）核对。官方 Desktop 使用同一套 Web 客户端，插件声明 `dsh.client.platform: "web"`。
 
 `v0.1.1` 已通过类型检查、构建、28 项本地单元测试和 6 项 Chromium 浏览器测试。在隔离的官方 `@deepseek-ai/dsh@0.2.0-rc.2` Web profile 中，已验证侧边栏快捷入口与设置弹窗内原入口并存、两处保存后的配置同步、原 PNG 图标、收起侧栏的入口、三个区域配置与会话列表共用侧边栏背景，以及深色和浅色主题下的透明设置弹窗、底层文字隐藏与关闭后的恢复，无页面错误。自动化任务下方的位置通过官方入口排序契约验证。
+
+`v0.1.2` 增加设置导航图标适配，已通过类型检查、构建、客户端注册定向测试，以及官方 Web 端的图标显示、关闭重开与配置保存验证。设置与侧栏图标均与原 `asset/icon.png` 字节一致。当前宿主没有设置导航图标扩展接口，适配仅作用于本插件的设置入口。
 
 Desktop 的适配依据其共用 Web 客户端与官方插件接口；尚未在 Electron Desktop 中实机验证。Harness 的插件 API 尚未稳定，之后的版本可能需要适配。
 

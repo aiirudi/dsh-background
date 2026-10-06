@@ -1,6 +1,7 @@
 import backgroundIcon from '../asset/icon.png';
 import { mountBackgrounds } from './renderer.js';
 import { createSettingsPanel } from './settings.js';
+import { mountSettingsIcon } from './settings-icon.js';
 import { createConfigStore } from './storage.js';
 
 /** Small structural faces of the Host's shared React and Cordis services. */
@@ -68,6 +69,7 @@ window.__ModuleLoader__.load({
           const store = createConfigStore(window);
           const renderer = mountBackgrounds(document, store.load().config);
           const unsubscribe = store.subscribe(config => renderer.update(config));
+          const disposeSettingsIcon = mountSettingsIcon(document, backgroundIcon);
 
           function BackgroundIcon({ size }: SidebarPanelIconProps) {
             return React.createElement('img', {
@@ -171,6 +173,7 @@ window.__ModuleLoader__.load({
           }, BackgroundSettings));
 
           return () => {
+            disposeSettingsIcon();
             unregisterSettings();
             unregisterSidebar();
             unregisterMain();

@@ -815,6 +815,52 @@ ${issues.join("\n")}`);
     return root;
   }
 
+  // src/settings-icon.ts
+  var SETTINGS_LABEL = "\u80CC\u666F / Background";
+  var ICON_ATTRIBUTE = "data-dsh-background-settings-icon";
+  var NAV_SELECTOR = '[data-shortcut-modal="settings"] nav';
+  function mountSettingsIcon(document2, source) {
+    const Observer = document2.defaultView?.MutationObserver;
+    if (!Observer) return () => {
+    };
+    const style = document2.createElement("style");
+    style.setAttribute("data-dsh-background-settings-icon-style", "");
+    style.textContent = `${NAV_SELECTOR} button > img[${ICON_ATTRIBUTE}] + svg { display: none !important; }`;
+    document2.head.append(style);
+    const icons = /* @__PURE__ */ new Set();
+    function sync() {
+      for (const image of icons) {
+        if (!image.isConnected) icons.delete(image);
+      }
+      for (const button of document2.querySelectorAll(`${NAV_SELECTOR} button`)) {
+        if (button.textContent?.trim() !== SETTINGS_LABEL) continue;
+        if (button.querySelector(`:scope > img[${ICON_ATTRIBUTE}]`)) continue;
+        const original = button.querySelector(":scope > svg");
+        if (!original) continue;
+        const image = document2.createElement("img");
+        image.setAttribute(ICON_ATTRIBUTE, "");
+        image.src = source;
+        image.alt = "";
+        image.setAttribute("aria-hidden", "true");
+        image.draggable = false;
+        image.width = Number(original.getAttribute("width")) || 16;
+        image.height = Number(original.getAttribute("height")) || 16;
+        image.style.cssText = "display:block;flex:none;object-fit:contain";
+        original.before(image);
+        icons.add(image);
+      }
+    }
+    sync();
+    const observer = new Observer(sync);
+    observer.observe(document2.body, { childList: true, subtree: true, characterData: true });
+    return () => {
+      observer.disconnect();
+      for (const image of icons) image.remove();
+      icons.clear();
+      style.remove();
+    };
+  }
+
   // src/storage.ts
   var STORAGE_KEY = "dsh-background.config.v1";
   function createConfigStore(window2) {
@@ -881,6 +927,7 @@ ${issues.join("\n")}`);
             const store = createConfigStore(window);
             const renderer = mountBackgrounds(document, store.load().config);
             const unsubscribe = store.subscribe((config) => renderer.update(config));
+            const disposeSettingsIcon = mountSettingsIcon(document, icon_default);
             function BackgroundIcon({ size }) {
               return React.createElement("img", {
                 src: icon_default,
@@ -976,6 +1023,7 @@ ${issues.join("\n")}`);
               label: "\u80CC\u666F / Background"
             }, BackgroundSettings));
             return () => {
+              disposeSettingsIcon();
               unregisterSettings();
               unregisterSidebar();
               unregisterMain();
