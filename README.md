@@ -2,6 +2,8 @@
 
 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Web 与官方 Desktop 客户端分别设置全局、聊天和侧边栏背景。三个区域可以同时使用不同图片、轮播间隔和样式，会话列表沿用侧边栏背景。
 
+适配 Windows、macOS 和 Linux 三端：支持 **Windows 10 / 11 x64**，同时支持 **macOS Apple Silicon arm64 Preview** 与 **Linux x64 Preview** 的官方 Desktop 客户端，也可在 Web 端使用。
+
 项目仓库：[flora-ari/dsh-background](https://github.com/flora-ari/dsh-background)。
 
 从 `v0.1.7` 起，安装包名为 `dsh-background-ari`，用于与市场中的其他同名背景插件区分。仓库名称、背景设置入口和客户端配置存储键保持原样。
@@ -13,7 +15,7 @@
 可从 [GitHub Releases](https://github.com/flora-ari/dsh-background/releases) 下载 `.tgz` 安装包，也可以将下面的下载地址填入 Desktop 的插件安装页面，或通过 Web CLI 安装：
 
 ```sh
-dsh plugin --profile web add https://github.com/flora-ari/dsh-background/releases/download/v0.1.8/dsh-background-ari-0.1.8.tgz
+dsh plugin --profile web add https://github.com/flora-ari/dsh-background/releases/download/v0.1.9/dsh-background-ari-0.1.9.tgz
 ```
 
 ### Web
@@ -48,7 +50,7 @@ dsh plugin --profile desktop add github:flora-ari/dsh-background#main
 
 ```sh
 dsh plugin --profile web remove dsh-background
-dsh plugin --profile web add https://github.com/flora-ari/dsh-background/releases/download/v0.1.8/dsh-background-ari-0.1.8.tgz
+dsh plugin --profile web add https://github.com/flora-ari/dsh-background/releases/download/v0.1.9/dsh-background-ari-0.1.9.tgz
 ```
 
 开发过程中如已安装临时包 `flora-ari-dsh-background`，也要在对应 profile 移除它；Web 端可执行 `dsh plugin --profile web remove flora-ari-dsh-background`，然后安装上面的新版安装包。
@@ -68,10 +70,10 @@ npm run build
 npm pack
 ```
 
-完成上述构建后，`npm pack` 输出 `dsh-background-ari-0.1.8.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径（将下方占位路径替换为安装包的绝对路径）：
+完成上述构建后，`npm pack` 输出 `dsh-background-ari-0.1.9.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径（将下方占位路径替换为安装包的绝对路径）：
 
 ```sh
-dsh plugin --profile web add "absolute\path\to\dsh-background-ari-0.1.8.tgz"
+dsh plugin --profile web add "absolute\path\to\dsh-background-ari-0.1.9.tgz"
 ```
 
 ## 设置背景
@@ -90,7 +92,7 @@ dsh plugin --profile web add "absolute\path\to\dsh-background-ari-0.1.8.tgz"
 | `chat` | 聊天主区域，包括空会话与轨迹页面 |
 | `sidebar` | 左侧导航、会话与工作区列表，以及右侧边栏 |
 
-各区域独立配置；`fullscreen` 位于底层，聊天和右侧面板可以在它上面叠加自己的背景。左侧边栏启用自己的图片时，以宿主主题底色承接图片透明度，不透出全局图片；例如 `opacity: 0.3` 时只显示左侧图片与主题底色的混合效果，Windows 左上顶部栏也采用同样的规则。左侧边栏关闭背景或图库为空时，仍沿用全局背景。图片的 `opacity` 只控制背景图片，文字和操作控件不会一起变透明。会话列表与侧边栏使用同一张背景，不再单独设置；显示侧边栏背景时，会话列表底部的分隔渐变也会移除。
+各区域独立配置；`fullscreen` 位于底层，聊天区域可以在它上面叠加自己的背景。左右侧边栏启用图片时，都以宿主主题底色承接图片透明度，不透出全局图片；例如 `opacity: 0.3` 时只显示侧边栏图片与主题底色的混合效果，透明 PNG 和图片未覆盖的区域也显示主题底色。Windows 左右顶部栏分别采用对应侧边栏的相同底色。侧边栏背景关闭或图库为空时，仍沿用全局背景。图片的 `opacity` 只控制背景图片，文字和操作控件不会一起变透明。会话列表与左侧边栏使用同一张背景，不再单独设置；显示侧边栏背景时，会话列表底部的分隔渐变也会移除。
 
 轨迹页面优先使用已启用且有图片的 `chat` 背景；聊天背景关闭或图库为空时，沿用 `fullscreen` 背景。
 
@@ -192,13 +194,15 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 
 ## 开发约定
 
-`main` 是开发主干。每次迭代可以使用 `v0.1.8` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
+`main` 是开发主干。每次迭代可以使用 `v0.1.9` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
 
 测试代码统一放在本地 `tests/`。按本项目约定，`tests/`、`.agents/`、`.claude/` 以及其他运行时临时产物不上传到仓库，也不进入安装包；本地开发环境保留测试时，可执行 `npm test` 和 `npm run test:browser`。安装包通过 `files` 白名单仅包含构建产物、插件配置、图标、示例和文档。
 
 ## 兼容性
 
 插件包格式、客户端工厂、设置页扩展和区域定位已按官方源码的 `dsh-v0.2.0-rc.2`（`639ed015397290b3745d163aafe02ffee4aa3f84`）及 `master` 的 `0.2.1-alpha.1` 源码（`5badb15009ae1756c3afe0ae0cef1faafc290ccc`）核对。官方 Desktop 使用同一套 Web 客户端，插件声明 `dsh.client.platform: "web"`。
+
+背景、图库、轮播和设置共用浏览器实现。Windows 与 Web 已有实际运行验证；macOS Apple Silicon arm64 和 Linux x64 尚未完成实机验证，当前按 Preview 支持。顶部栏分段背景仅适用于 Windows 客户端。
 
 `v0.1.1` 已通过类型检查、构建、28 项本地单元测试和 6 项 Chromium 浏览器测试。在隔离的官方 `@deepseek-ai/dsh@0.2.0-rc.2` Web profile 中，已验证侧边栏快捷入口与设置弹窗内原入口并存、两处保存后的配置同步、原 PNG 图标、收起侧栏的入口、三个区域配置与会话列表共用侧边栏背景，以及深色和浅色主题下的透明设置弹窗、底层文字隐藏与关闭后的恢复，无页面错误。自动化任务下方的位置通过官方入口排序契约验证。
 
@@ -215,6 +219,8 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 `v0.1.7` 增加 Windows 顶部栏分段背景，63 项单元测试与 6 个 Chromium 用例通过，标题栏与两侧面板图片的连续性已在 Web 场景中用截图核对。官方 `0.2.0-rc.2` Desktop 已实机验证包名迁移后的启动与插件加载，只有一个运行实例，原有 `localStorage` 配置保留。
 
 `v0.1.8` 让左侧图片以主题底色承接透明度，避免与全局图片重叠。类型检查、20 项相关单元测试及 2 个 Chromium 用例通过；像素验证覆盖深浅主题、全局换图、透明 PNG、图片未铺满区域、透明度 0 与 1、左侧顶部栏连续性，以及关闭或清空左侧图片后的全局背景恢复。
+
+`v0.1.9` 将主题底色隔离扩展到右侧边栏及 Windows 右上顶部栏，左右两侧在低不透明度、透明 PNG 和缩放留白处均不透出全局图片。类型检查、20 项相关单元测试及 2 个 Chromium 用例通过；22 个截图场景覆盖深浅主题、全局换图、两侧顶部栏连续性、新建面板、关闭重开、主题切换和关闭背景后的恢复，原有分栏尺寸与操作保持可用。
 
 Windows 原生窗口按钮背景色尚无实机像素验证。Harness 的插件 API 尚未稳定，之后的版本可能需要适配。
 

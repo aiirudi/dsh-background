@@ -189,9 +189,8 @@ export function createTitlebarBackgrounds(document: Document, owner: string, sty
         mount.layer.style.top = `${-offset}px`;
         Object.assign(image.clip.style, {
           top: "0px", left: `${left - rect.left}px`, width: `${right - left}px`, height: `${height}px`,
-          // The left caption shares its body's opaque base even over a global image.
-          backgroundColor: side === "left" ? mount.layer.style.backgroundColor
-            : global ? "transparent" : "var(--dsw-alias-bg-base)",
+          // Each sidebar caption shares its body's opaque base.
+          backgroundColor: mount.layer.style.backgroundColor,
         });
         Object.assign(image.scene.style, {
           top: "0px", left: `${origin - left}px`, width: `${width}px`, height: `${body.height - borderTop - borderBottom + offset}px`,

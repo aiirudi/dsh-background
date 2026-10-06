@@ -226,8 +226,8 @@ export function mountBackgrounds(
     layer.setAttribute("data-dsh-background-owner", ownerId);
     layer.setAttribute("aria-hidden", "true");
     if (region.name === "fullscreen") layer.style.position = "fixed";
-    if (region.name === "sidebar" && regions.includes(region)) {
-      // Composite the left image over its native theme fill, not the global image.
+    if (region.name === "sidebar") {
+      // Composite each sidebar image over its native theme fill.
       // Keep the fill outside the fading planes, including transparent/gapped images.
       layer.style.backgroundColor = "var(--dsw-specific-sidebar-fill, var(--dsw-alias-bg-base, Canvas))";
     }
