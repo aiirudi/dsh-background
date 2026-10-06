@@ -303,6 +303,16 @@ export function mountBackgrounds(
           const column = slot.parentElement;
           if (column instanceof window!.HTMLElement && mount.host.contains(column)) desired.set(column, transparentBackground);
         }
+        // TaskManagerPage paints bg-base over the global layer; its list and
+        // scroll containers are already transparent in Harness Web and Desktop.
+        for (const page of mount.host.querySelectorAll('[data-slot="main"] > [data-testid="task-manager-page"]')) {
+          if (!(page instanceof window!.HTMLElement) || owned(page)) continue;
+          desired.set(page, transparentBackground);
+          // TaskDetail is the page's direct aside; keep its nested controls/cards.
+          for (const detail of page.querySelectorAll(':scope > aside')) {
+            if (detail instanceof window!.HTMLElement) desired.set(detail, transparentBackground);
+          }
+        }
         addWorkspaceSurfaces(mount.host);
       }
     }

@@ -455,6 +455,13 @@ ${issues.join("\n")}`);
             const column = slot.parentElement;
             if (column instanceof window2.HTMLElement && mount.host.contains(column)) desired.set(column, transparentBackground);
           }
+          for (const page of mount.host.querySelectorAll('[data-slot="main"] > [data-testid="task-manager-page"]')) {
+            if (!(page instanceof window2.HTMLElement) || owned(page)) continue;
+            desired.set(page, transparentBackground);
+            for (const detail of page.querySelectorAll(":scope > aside")) {
+              if (detail instanceof window2.HTMLElement) desired.set(detail, transparentBackground);
+            }
+          }
           addWorkspaceSurfaces(mount.host);
         }
       }
