@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tgz
+.agents/
+.claude/
+.codex/
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+!.env.example
