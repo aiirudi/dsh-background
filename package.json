@@ -1,17 +1,17 @@
 {
-  "name": "dsh-background",
-  "version": "0.1.6",
+  "name": "dsh-background-ari",
+  "version": "0.1.7",
   "description": "Independent background images and carousels for DeepSeek Harness Web and Desktop.",
   "type": "module",
   "license": "MIT",
   "author": "aiirudi",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aiirudi/dsh-background.git"
+    "url": "https://github.com/flora-ari/dsh-background.git"
   },
-  "homepage": "https://github.com/aiirudi/dsh-background#readme",
+  "homepage": "https://github.com/flora-ari/dsh-background#readme",
   "bugs": {
-    "url": "https://github.com/aiirudi/dsh-background/issues"
+    "url": "https://github.com/flora-ari/dsh-background/issues"
   },
   "keywords": [
     "dsh-plugin",

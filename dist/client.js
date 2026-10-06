@@ -218,6 +218,237 @@ ${issues.join("\n")}`);
     return result;
   }
 
+  // src/titlebar.ts
+  function createTitlebarBackgrounds(document2, owner, style) {
+    const window2 = document2.defaultView;
+    const images = /* @__PURE__ */ new Map();
+    const observed = /* @__PURE__ */ new Set();
+    let sources = [];
+    let fullscreenHosts = [];
+    let disposed = false;
+    let queued = false;
+    let frameStyle;
+    let probeStyle;
+    const pulse = document2.createTextNode("");
+    style.append(pulse);
+    const resize = typeof window2.ResizeObserver === "function" ? new window2.ResizeObserver(queue) : void 0;
+    const transitions = /* @__PURE__ */ new Map();
+    let animation;
+    function notifyAppearance() {
+      pulse.data = pulse.data === "" ? "\n" : "";
+    }
+    function setProbe(active) {
+      if (probeStyle && (!active || !probeStyle.probe.isConnected)) {
+        const { probe: probe2, value, priority } = probeStyle;
+        if (value === "") probe2.style.removeProperty("background-color");
+        else probe2.style.setProperty("background-color", value, priority);
+        probeStyle = void 0;
+        notifyAppearance();
+      }
+      if (!active || probeStyle) return;
+      const candidates = [...document2.body.children].filter((element) => {
+        if (!(element instanceof window2.HTMLElement) || element.tagName !== "SPAN") return false;
+        const css = element.style;
+        return css.getPropertyValue("position") === "fixed" && css.getPropertyValue("visibility") === "hidden" && css.getPropertyValue("pointer-events") === "none" && css.getPropertyValue("background-color") === "var(--dsw-specific-sidebar-fill)" && css.getPropertyValue("color") === "var(--dsw-alias-label-primary)";
+      });
+      if (candidates.length !== 1) return;
+      const probe = candidates[0];
+      probeStyle = { probe, value: probe.style.getPropertyValue("background-color"), priority: probe.style.getPropertyPriority("background-color") };
+      probe.style.setProperty("background-color", "transparent", "important");
+      notifyAppearance();
+    }
+    function setFrame(frame) {
+      if (frameStyle?.frame === frame) return;
+      if (frameStyle) {
+        if (frameStyle.attribute === null) frameStyle.frame.removeAttribute("data-dsh-background-caption-frame");
+        else frameStyle.frame.setAttribute("data-dsh-background-caption-frame", frameStyle.attribute);
+        frameStyle = void 0;
+      }
+      if (frame) {
+        frameStyle = { frame, attribute: frame.getAttribute("data-dsh-background-caption-frame") };
+        frame.setAttribute("data-dsh-background-caption-frame", owner);
+      }
+    }
+    function remove(mount) {
+      images.get(mount)?.clip.remove();
+      images.delete(mount);
+      mount.layer.style.removeProperty("top");
+    }
+    function sync(mount) {
+      const image = images.get(mount);
+      if (!image) return;
+      mount.planes.forEach((plane, index) => {
+        const css = plane.style.cssText;
+        if (image.paint[index] === css) return;
+        image.paint[index] = css;
+        const copy = image.planes[index];
+        copy.style.cssText = css;
+        copy.style.position = "absolute";
+        copy.style.inset = plane.style.inset || "0px";
+        copy.style.backgroundRepeat = "no-repeat";
+        copy.style.pointerEvents = "none";
+        copy.style.visibility = "var(--dsh-background-image-visibility, inherit)";
+      });
+    }
+    function ownedDiv(marker) {
+      const node = document2.createElement("div");
+      node.setAttribute(marker, "");
+      node.setAttribute("data-dsh-background-owner", owner);
+      return node;
+    }
+    function watch(elements) {
+      for (const element of observed) {
+        if (elements.has(element)) continue;
+        resize?.unobserve(element);
+        observed.delete(element);
+        transitions.delete(element);
+      }
+      for (const element of elements) {
+        if (observed.has(element)) continue;
+        observed.add(element);
+        resize?.observe(element);
+      }
+      if (transitions.size === 0 && animation !== void 0) {
+        window2.cancelAnimationFrame(animation);
+        animation = void 0;
+      }
+    }
+    function refresh() {
+      if (disposed) return;
+      const root = document2.documentElement;
+      const candidate = root.hasAttribute("data-windows-titlebar") ? document2.querySelector("[data-shell-overlay]")?.parentElement : void 0;
+      const frame = candidate instanceof window2.HTMLElement ? candidate : void 0;
+      const rect = frame?.getBoundingClientRect();
+      const height = frame ? Math.min(
+        Number.parseFloat(window2.getComputedStyle(root).getPropertyValue("--dsh-windows-titlebar-height")) || 0,
+        Number.parseFloat(window2.getComputedStyle(frame).paddingTop) || 0
+      ) : 0;
+      const active = frame && rect && rect.width > 0 && rect.height > height && height > 0;
+      const global = !!active && fullscreenHosts.some((host) => host === frame || host.contains(frame));
+      const desired = /* @__PURE__ */ new Set();
+      const elements = /* @__PURE__ */ new Set();
+      if (active && (global || sources.length > 0)) {
+        elements.add(frame);
+        for (const source of sources) {
+          const { mount, side, panel } = source;
+          if (!mount.host.isConnected || !frame.contains(mount.host) || mount.host.closest('[hidden], [aria-hidden="true"]')) continue;
+          const body = mount.host.getBoundingClientRect();
+          const column = side === "left" ? mount.host.closest('[data-slot="sidebar"]')?.parentElement : panel;
+          if (!column) continue;
+          const columnRect = column.getBoundingClientRect();
+          elements.add(column);
+          elements.add(mount.host);
+          if (side === "right" && mount.host.parentElement) elements.add(mount.host.parentElement);
+          if (side === "right" && (!panel?.hasAttribute("data-sidebar-right-open") || Math.abs(body.top - columnRect.top) > 1)) continue;
+          const computed = window2.getComputedStyle(mount.host);
+          const borderLeft = Number.parseFloat(computed.borderLeftWidth) || 0;
+          const borderRight = Number.parseFloat(computed.borderRightWidth) || 0;
+          const borderTop = Number.parseFloat(computed.borderTopWidth) || 0;
+          const borderBottom = Number.parseFloat(computed.borderBottomWidth) || 0;
+          const origin = body.left + borderLeft;
+          const width = body.width - borderLeft - borderRight;
+          const offset = body.top + borderTop - rect.top;
+          const left = Math.max(origin, columnRect.left, rect.left);
+          const right = Math.min(origin + width, columnRect.right, rect.right);
+          if (body.height <= 0 || width <= 0 || right <= left || offset < height - 1) continue;
+          desired.add(mount);
+          let image = images.get(mount);
+          if (image && !image.clip.isConnected) remove(mount);
+          image = images.get(mount);
+          if (!image) {
+            const clip = ownedDiv("data-dsh-background-caption");
+            clip.setAttribute("data-dsh-background-caption", side);
+            clip.setAttribute("aria-hidden", "true");
+            Object.assign(clip.style, { position: "absolute", overflow: "hidden", pointerEvents: "none", userSelect: "none", zIndex: "0" });
+            const scene = ownedDiv("data-dsh-background-caption-scene");
+            scene.style.position = "absolute";
+            const planes = [ownedDiv("data-dsh-background-caption-plane"), ownedDiv("data-dsh-background-caption-plane")];
+            scene.append(...planes);
+            clip.append(scene);
+            frame.prepend(clip);
+            image = { clip, scene, planes, paint: ["unset", "unset"] };
+            images.set(mount, image);
+          }
+          mount.layer.style.top = `${-offset}px`;
+          Object.assign(image.clip.style, {
+            top: "0px",
+            left: `${left - rect.left}px`,
+            width: `${right - left}px`,
+            height: `${height}px`,
+            backgroundColor: global ? "transparent" : side === "left" ? "var(--dsw-specific-sidebar-fill)" : "var(--dsw-alias-bg-base)"
+          });
+          Object.assign(image.scene.style, {
+            top: "0px",
+            left: `${origin - left}px`,
+            width: `${width}px`,
+            height: `${body.height - borderTop - borderBottom + offset}px`
+          });
+          sync(mount);
+        }
+      }
+      for (const mount of images.keys()) if (!desired.has(mount)) remove(mount);
+      setFrame(global ? frame : void 0);
+      setProbe(global || images.size > 0);
+      watch(elements);
+    }
+    function queue() {
+      if (queued || disposed) return;
+      queued = true;
+      void Promise.resolve().then(() => {
+        queued = false;
+        refresh();
+      });
+    }
+    function animate() {
+      animation = void 0;
+      for (const element of transitions.keys()) if (!element.isConnected) transitions.delete(element);
+      refresh();
+      if (!disposed && transitions.size > 0) animation = window2.requestAnimationFrame(animate);
+    }
+    function transition(event) {
+      const target = event.target;
+      const property = event.propertyName;
+      if (!(target instanceof window2.Element) || !observed.has(target) || !["transform", "grid-template-columns", "width"].includes(property)) return;
+      if (event.type === "transitionrun") {
+        let properties = transitions.get(target);
+        if (!properties) transitions.set(target, properties = /* @__PURE__ */ new Set());
+        properties.add(property);
+        if (animation === void 0) animation = window2.requestAnimationFrame(animate);
+      } else {
+        const properties = transitions.get(target);
+        properties?.delete(property);
+        if (properties?.size === 0) transitions.delete(target);
+        queue();
+      }
+    }
+    window2.addEventListener("resize", queue);
+    for (const name of ["transitionrun", "transitionend", "transitioncancel"]) document2.addEventListener(name, transition, true);
+    return {
+      update(nextFullscreenHosts, nextSources) {
+        fullscreenHosts = nextFullscreenHosts;
+        sources = nextSources;
+        refresh();
+      },
+      sync,
+      remove,
+      lostNode(node) {
+        return [...images.values()].some((image) => image.clip === node && !image.clip.isConnected);
+      },
+      dispose() {
+        disposed = true;
+        resize?.disconnect();
+        observed.clear();
+        window2.removeEventListener("resize", queue);
+        for (const name of ["transitionrun", "transitionend", "transitioncancel"]) document2.removeEventListener(name, transition, true);
+        if (animation !== void 0) window2.cancelAnimationFrame(animation);
+        transitions.clear();
+        for (const mount of images.keys()) remove(mount);
+        setFrame(void 0);
+        setProbe(false);
+      }
+    };
+  }
+
   // src/renderer.ts
   var DEFAULT_SELECTORS = {
     fullscreen: '[data-dsh-background-region="fullscreen"], [data-slot="root"] > *',
@@ -275,7 +506,11 @@ ${issues.join("\n")}`);
       background-repeat: no-repeat; pointer-events: none !important;
       visibility: var(--dsh-background-image-visibility, inherit);
     }
+    html[data-windows-titlebar] [data-dsh-background-caption-frame="${ownerId}"]::before {
+      background-color: transparent !important;
+    }
   `;
+    const titlebar = createTitlebarBackgrounds(document2, ownerId, styleElement);
     const regions = REGION_NAMES.map((name) => ({
       name,
       config: config[name],
@@ -338,6 +573,7 @@ ${issues.join("\n")}`);
         mount.activePlane = nextPlane;
       }
       mount.image = source;
+      titlebar.sync(mount);
     }
     function ensureTimer(region) {
       const shouldRotate = enabled(region) && region.mounts.size > 0 && region.config.images.length > 1 && region.config.interval > 0;
@@ -358,6 +594,7 @@ ${issues.join("\n")}`);
     }
     function removeMount(region, mount) {
       region.mounts.delete(mount.host);
+      titlebar.remove(mount);
       mount.layer.remove();
       restoreStyles(mount.host, mount.savedStyles);
     }
@@ -563,6 +800,13 @@ ${issues.join("\n")}`);
         reconcileMounts(region, desired);
       }
       reconcileRightSidebars();
+      const fullscreen = regions.find((region) => region.name === "fullscreen");
+      const sidebar = regions.find((region) => region.name === "sidebar");
+      const captionSources = [...sidebar.mounts.values()].map((mount) => ({ mount, side: "left" }));
+      for (const [panel, region] of rightRegions) {
+        for (const mount of region.mounts.values()) captionSources.push({ mount, side: "right", panel });
+      }
+      titlebar.update([...fullscreen.mounts.keys()], captionSources);
       reconcileTransparentSurfaces();
     }
     function queueReconcile() {
@@ -574,6 +818,7 @@ ${issues.join("\n")}`);
       });
     }
     function lostOwnedNode(node) {
+      if (titlebar.lostNode(node)) return true;
       if (node === styleElement && !styleElement.isConnected) return true;
       for (const region of [...regions, ...rightRegions.values()]) {
         for (const mount of region.mounts.values()) {
@@ -627,6 +872,7 @@ ${issues.join("\n")}`);
         if (disposed) return;
         disposed = true;
         observer.disconnect();
+        titlebar.dispose();
         for (const region of [...regions, ...rightRegions.values()]) {
           stopTimer(region);
           for (const mount of [...region.mounts.values()]) removeMount(region, mount);
@@ -1095,7 +1341,7 @@ ${issues.join("\n")}`);
 
   // src/client.ts
   window.__ModuleLoader__.load({
-    id: "dsh-background",
+    id: "dsh-background-ari",
     factory(require2) {
       const React = require2("react");
       return {

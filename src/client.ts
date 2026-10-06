@@ -59,7 +59,7 @@ declare global {
 // Register a lazy factory: the shared client Loader owns materialization,
 // dependency waiting, and disposal in both the Web and Desktop applications.
 window.__ModuleLoader__.load({
-  id: 'dsh-background',
+  id: 'dsh-background-ari',
   factory(require) {
     const React = require('react');
     return {

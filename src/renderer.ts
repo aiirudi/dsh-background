@@ -6,6 +6,7 @@ import {
   type RegionName,
   type RightSidebarLayout,
 } from "./config.js";
+import { createTitlebarBackgrounds, type TitlebarSource } from "./titlebar.js";
 
 export const DEFAULT_SELECTORS: Readonly<Record<RegionName, string>> = {
   fullscreen: '[data-dsh-background-region="fullscreen"], [data-slot="root"] > *',
@@ -103,7 +104,11 @@ export function mountBackgrounds(
       background-repeat: no-repeat; pointer-events: none !important;
       visibility: var(--dsh-background-image-visibility, inherit);
     }
+    html[data-windows-titlebar] [data-dsh-background-caption-frame="${ownerId}"]::before {
+      background-color: transparent !important;
+    }
   `;
+  const titlebar = createTitlebarBackgrounds(document, ownerId, styleElement);
   const regions = REGION_NAMES.map((name): RegionRuntime => ({
     name,
     config: config[name],
@@ -175,6 +180,7 @@ export function mountBackgrounds(
       mount.activePlane = nextPlane;
     }
     mount.image = source;
+    titlebar.sync(mount);
   }
 
   function ensureTimer(region: RegionRuntime): void {
@@ -199,6 +205,7 @@ export function mountBackgrounds(
 
   function removeMount(region: RegionRuntime, mount: MountedHost): void {
     region.mounts.delete(mount.host);
+    titlebar.remove(mount);
     mount.layer.remove();
     restoreStyles(mount.host, mount.savedStyles);
   }
@@ -427,6 +434,13 @@ export function mountBackgrounds(
       reconcileMounts(region, desired);
     }
     reconcileRightSidebars();
+    const fullscreen = regions.find((region) => region.name === "fullscreen")!;
+    const sidebar = regions.find((region) => region.name === "sidebar")!;
+    const captionSources: TitlebarSource[] = [...sidebar.mounts.values()].map((mount) => ({ mount, side: "left" }));
+    for (const [panel, region] of rightRegions) {
+      for (const mount of region.mounts.values()) captionSources.push({ mount, side: "right", panel });
+    }
+    titlebar.update([...fullscreen.mounts.keys()], captionSources);
     reconcileTransparentSurfaces();
   }
 
@@ -440,6 +454,7 @@ export function mountBackgrounds(
   }
 
   function lostOwnedNode(node: Node): boolean {
+    if (titlebar.lostNode(node)) return true;
     if (node === styleElement && !styleElement.isConnected) return true;
     for (const region of [...regions, ...rightRegions.values()]) {
       for (const mount of region.mounts.values()) {
@@ -495,6 +510,7 @@ export function mountBackgrounds(
       if (disposed) return;
       disposed = true;
       observer.disconnect();
+      titlebar.dispose();
       for (const region of [...regions, ...rightRegions.values()]) {
         stopTimer(region);
         for (const mount of [...region.mounts.values()]) removeMount(region, mount);

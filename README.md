@@ -2,18 +2,26 @@
 
 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Web 与官方 Desktop 客户端分别设置全局、聊天和侧边栏背景。三个区域可以同时使用不同图片、轮播间隔和样式，会话列表沿用侧边栏背景。
 
-项目仓库：[aiirudi/dsh-background](https://github.com/aiirudi/dsh-background)。
+项目仓库：[flora-ari/dsh-background](https://github.com/flora-ari/dsh-background)。
+
+从 `v0.1.7` 起，安装包名为 `dsh-background-ari`，用于与市场中的其他同名背景插件区分。仓库名称、背景设置入口和客户端配置存储键保持原样。
 
 ## 安装
 
 本仓库提供已编译的 `dist/`，安装时无需编译。包没有 `prepare`、`preinstall`、`install` 或 `postinstall` 脚本。
+
+可从 [GitHub Releases](https://github.com/flora-ari/dsh-background/releases) 下载 `.tgz` 安装包，也可以将下面的下载地址填入 Desktop 的插件安装页面，或通过 Web CLI 安装：
+
+```sh
+dsh plugin --profile web add https://github.com/flora-ari/dsh-background/releases/download/v0.1.7/dsh-background-ari-0.1.7.tgz
+```
 
 ### Web
 
 使用已安装的 Harness CLI，把插件加入 Web profile：
 
 ```sh
-dsh plugin --profile web add github:aiirudi/dsh-background#main
+dsh plugin --profile web add github:flora-ari/dsh-background#main
 ```
 
 重启 Web 服务并刷新页面。迭代分支仅保留在本地，GitHub 安装使用 `#main`。
@@ -23,16 +31,31 @@ dsh plugin --profile web add github:aiirudi/dsh-background#main
 在 Desktop 侧边栏的 **Plugins / 插件** 页面安装，填写：
 
 ```text
-github:aiirudi/dsh-background#main
+github:flora-ari/dsh-background#main
 ```
 
 也可以通过 Desktop 自带的 CLI 安装：先启动 Desktop 一次以初始化 profile，完全退出应用，再执行：
 
 ```sh
-dsh plugin --profile desktop add github:aiirudi/dsh-background#main
+dsh plugin --profile desktop add github:flora-ari/dsh-background#main
 ```
 
 随后重新打开 Desktop。这里必须使用 **Desktop 自带的命令**；通过 npm 安装的 CLI 不能修改 Desktop 保留的 profile。Web 与 Desktop 的插件安装分别生效。
+
+### 从本插件旧版升级
+
+如果已安装本仓库的 `v0.1.6` 或更早版本，其安装包名为 `dsh-background`。先在同一 profile 的插件页面移除这个旧包，再安装新版，以免两个副本同时运行。Web 端也可使用：
+
+```sh
+dsh plugin --profile web remove dsh-background
+dsh plugin --profile web add https://github.com/flora-ari/dsh-background/releases/download/v0.1.7/dsh-background-ari-0.1.7.tgz
+```
+
+开发过程中如已安装临时包 `flora-ari-dsh-background`，也要在对应 profile 移除它；Web 端可执行 `dsh plugin --profile web remove flora-ari-dsh-background`，然后安装上面的新版安装包。
+
+这里的移除步骤仅适用于本仓库的旧包；如安装的是其他作者的同名插件，请先核对来源。保持原客户端与服务地址时，原有背景配置保留。Desktop 用户通过其插件页面操作，或使用 Desktop 自带的 CLI，在应用完全退出后对 `desktop` profile 执行同样的替换，然后重新打开应用。
+
+使用本地工作区链接开发时，改包名后先执行 `npm run build`，再完全退出 Desktop，使用其自带 CLI 移除旧包并重新安装工作区，最后重新打开应用。宿主首次加载包时会保存客户端产物快照；如果新包名对应的旧产物仍注册旧模块 ID，加载失败后的回退可能再次执行它，出现 `import failed` 或 `duplicate factory registration`。仅刷新页面不足以更新已运行宿主的快照，需要完整退出并用新构建重新启动。
 
 ### 本地构建与安装包
 
@@ -45,10 +68,10 @@ npm run build
 npm pack
 ```
 
-完成上述构建后，`npm pack` 输出 `dsh-background-0.1.6.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径，例如：
+完成上述构建后，`npm pack` 输出 `dsh-background-ari-0.1.7.tgz`。也可以用 `npm run package` 一次完成类型检查、构建与打包。在 Plugins 页面安装这个文件，或用 Web CLI 传入它的绝对路径（将下方占位路径替换为安装包的绝对路径）：
 
 ```sh
-dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-background-0.1.6.tgz"
+dsh plugin --profile web add "absolute\path\to\dsh-background-ari-0.1.7.tgz"
 ```
 
 ## 设置背景
@@ -80,6 +103,8 @@ dsh plugin --profile web add "E:\Work\LLM_application\dsh-background\dsh-backgro
 所有区域的图片缩放方式均可直接选择「高度铺满，宽度自适应」或「宽度铺满，高度自适应」。也可选择等比例铺满、完整显示、按宽高铺满，或选择「自定义尺寸」填写 CSS 尺寸。
 
 右侧面板的展开、收起、宽度和模式控制完全沿用 DeepSeek Harness 原版，插件只添加背景，不修改原版仓库或主动切换显示模式。普通侧栏保持与聊天区域并排；Harness 会记住此前选择的全屏模式。在较宽的窗口中，如果侧栏占满聊天区域，可点击侧栏内的「退出全屏」恢复并排。窗口较窄时，宿主会自行使用全屏布局。
+
+Windows Desktop 顶部栏按照下方组件划分背景：左上与左侧边栏共用图片，中间使用 `fullscreen` 全局图片，右侧面板打开时右上与右侧共用当前图片。两侧图片将顶部栏与组件视为同一绘制区域，缩放、位置和轮播保持连续。顶部菜单和窗口按钮沿用宿主控件；关闭背景时恢复原来的顶部栏。此适配作用于宿主提供的 Windows 标题栏区域。
 
 旧版配置中的 `sessionList` 会被忽略，已有的 `fullscreen`、`chat` 和 `sidebar` 配置保持可用。保存或导出后，配置只包含这三个区域。
 
@@ -167,7 +192,7 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 
 ## 开发约定
 
-`main` 是开发主干。每次迭代可以使用 `v0.1.6` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
+`main` 是开发主干。每次迭代可以使用 `v0.1.7` 这样的本地分支开发，完成验证后合并回 `main`，仅推送 `main`，不上传开发分支。发布前重新构建并提交 `dist/`，让 GitHub 安装使用与源码对应的产物。
 
 测试代码统一放在本地 `tests/`。按本项目约定，`tests/`、`.agents/`、`.claude/` 以及其他运行时临时产物不上传到仓库，也不进入安装包；本地开发环境保留测试时，可执行 `npm test` 和 `npm run test:browser`。安装包通过 `files` 白名单仅包含构建产物、插件配置、图标、示例和文档。
 
@@ -187,7 +212,9 @@ JSON 是本插件设置页面使用的配置格式；背景设置保存在客户
 
 `v0.1.6` 让自动化任务列表与详情区域继承全局背景，已通过类型检查、构建、26 项相关单元测试与 4 个 Chromium 用例。浏览器用例覆盖详情结构背景、控件样式、全局轮播及关闭后的恢复。隔离的官方 Web profile 已实跑验证任务列表透出全局图片、搜索与筛选、切换页面、图片轮播，以及关闭全局背景、清空图库和关闭插件后的恢复；验证没有创建任务或调用模型。
 
-Desktop 的适配依据其共用 Web 客户端与官方插件接口；尚未在 Electron Desktop 中实机验证。Harness 的插件 API 尚未稳定，之后的版本可能需要适配。
+`v0.1.7` 增加 Windows 顶部栏分段背景，63 项单元测试与 6 个 Chromium 用例通过，标题栏与两侧面板图片的连续性已在 Web 场景中用截图核对。官方 `0.2.0-rc.2` Desktop 已实机验证包名迁移后的启动与插件加载，只有一个运行实例，原有 `localStorage` 配置保留。
+
+Windows 原生窗口按钮背景色尚无实机像素验证。Harness 的插件 API 尚未稳定，之后的版本可能需要适配。
 
 ## License
 
