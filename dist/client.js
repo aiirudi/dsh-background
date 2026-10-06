@@ -375,7 +375,8 @@ ${issues.join("\n")}`);
             left: `${left - rect.left}px`,
             width: `${right - left}px`,
             height: `${height}px`,
-            backgroundColor: global ? "transparent" : side === "left" ? "var(--dsw-specific-sidebar-fill)" : "var(--dsw-alias-bg-base)"
+            // The left caption shares its body's opaque base even over a global image.
+            backgroundColor: side === "left" ? mount.layer.style.backgroundColor : global ? "transparent" : "var(--dsw-alias-bg-base)"
           });
           Object.assign(image.scene.style, {
             top: "0px",
@@ -614,6 +615,9 @@ ${issues.join("\n")}`);
       layer.setAttribute("data-dsh-background-owner", ownerId);
       layer.setAttribute("aria-hidden", "true");
       if (region.name === "fullscreen") layer.style.position = "fixed";
+      if (region.name === "sidebar" && regions.includes(region)) {
+        layer.style.backgroundColor = "var(--dsw-specific-sidebar-fill, var(--dsw-alias-bg-base, Canvas))";
+      }
       const planes = [document2.createElement("div"), document2.createElement("div")];
       planes.forEach((plane, index) => {
         plane.setAttribute("data-dsh-background-plane", String(index));
